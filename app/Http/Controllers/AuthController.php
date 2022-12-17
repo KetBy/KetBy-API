@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Registration;
 use Validator;
-use App\Mail\Send;
+use App\Jobs\SendEmailJob;
 use Illuminate\Support\Facades\Mail;
 
 use PHLAK\StrGen;
@@ -33,12 +33,12 @@ class AuthController extends Controller
             'password' => 'required|string|min:6',
         ]);
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return response()->json(['success' => false, "field_errors" => $validator->errors()], 400);
         }
-        if (! $token = auth()->attempt($validator->validated())) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        if (!$token = auth()->attempt($validator->validated())) {
+            return response()->json(['success' => false, "message" => "Wrong credentials."], 401);
         }
-        return $this->createNewToken($token);
+        return response()->json(['success' => true, 'token' => $this->createNewToken($token)]);
     }
     /**
      * Register a User.
@@ -84,26 +84,20 @@ class AuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => "Something went wrong. Please try again later. Error code: R002",
-                'registration' => $registration
             ], 400);
         }
 
         // Send confirmation email
-        $mail = Mail::to($request->email)->send(
-            new Send("Confirm your KetBy account", "mail.confirm", ['token' => $token])
-        );
-
-        if(!$mail) {
-            return response()->json([
-                'success' => false,
-                'message' => "Something went wrong. Please try again later. Error code: R003",
-                'registration' => $registration
-            ], 400);
-        }
+        dispatch(new SendEmailJob(
+            $request->email, 
+            "Activate your KetBy account", 
+            "mail.confirm", 
+            ['token' => $token]
+        ));
 
         return response()->json([
             'success' => true,
-            'message' => "We've sent you an email. Please check it in order to activate your account.",
+            'message' => "You'll soon get an email from us. Please check it in order to activate your account.",
             'registration' => $registration
         ], 200);
 
@@ -119,7 +113,7 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => "You've logged out of your account successfully. See you later!"
-        ], Response::HTTP_OK);
+        ], 200);
     }
 
     /**
@@ -145,7 +139,7 @@ class AuthController extends Controller
             ], 200);
         } else {
             return response()->json([
-                'is_loggedn_in' => false,
+                'is_logged_in' => false,
                 'user' => $user
             ], 401);
         }
