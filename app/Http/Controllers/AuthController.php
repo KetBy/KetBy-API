@@ -20,7 +20,7 @@ class AuthController extends Controller
      * @return void
      */
     public function __construct() {
-        $this->middleware('auth:api', ['except' => ['login', 'register']]);
+        // $this->middleware('auth:api', ['except' => ['login', 'register']]);
     }
     /**
      * Get a JWT via given credentials.
@@ -68,6 +68,9 @@ class AuthController extends Controller
             ], 400);
         }
 
+        $firstName = ucwords(strtolower($request->first_name));
+        $lastName = ucwords(strtolower($request->last_name));
+
         // Generate a random confirmation token
         $generator = new StrGen\Generator();
         $token = $generator->charset(StrGen\CharSet::ALPHA_NUMERIC)->length(32)->generate();
@@ -77,7 +80,12 @@ class AuthController extends Controller
 
         $registration = Registration::create(array_merge(
             $validator->validated(),
-            ['password' => bcrypt($request->password), 'token' => $token]
+            [
+                'password' => bcrypt($request->password), 
+                'token' => $token,
+                'first_name' => $firstName,
+                'last_name' => $lastName
+            ]
         ));
 
         if(!$registration) {
@@ -100,6 +108,84 @@ class AuthController extends Controller
             'message' => "You'll soon get an email from us. Please check it in order to activate your account.",
             'registration' => $registration
         ], 200);
+
+    }
+
+    /**
+     * Confirm a registration.
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function confirm(Request $request) {
+
+        $data = $request->only('token');
+        
+        // Validate input
+        $validator = Validator::make($data, [
+            'token' => 'required|string|min:32|max:64',
+        ]);
+
+        $token = $request->token;
+
+        if($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => "This link does not exist or is broken. Please try registering again."
+            ], 200);
+        }
+
+        // Check if registration exists
+        $registration = Registration::where('token', '=', $token)->first();
+
+        // If the token is invalid
+        if(!$registration) {
+            return response()->json([
+                'success' => false,
+                'message' => "This link does not exist or is broken. Please try registering again."
+            ], 200);
+        }
+
+        // Delete all registrations with the same email
+        Registration::where('email', $registration->email)->delete();
+
+        // Generate unique username
+        $generator = new StrGen\Generator();
+        $username = "user_" . $generator->charset(StrGen\CharSet::NUMERIC)->length(12)->generate();
+        while(User::where('username', '=', $token)->count() > 0) {
+            $username = "user_" . $generator->charset(StrGen\CharSet::NUMERIC)->length(12)->generate();
+        }
+
+        // If the deletion is successful, create a new account
+        $user = User::create([
+            'first_name' => $registration->first_name,
+            'last_name' => $registration->last_name,
+            'email' => $registration->email,
+            'password' => $registration->password,
+            'username' => $username
+        ]);
+
+        // If user creating failed
+        if(!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => "This link does not exist or is broken. Please try registering again. Error code: C0001"
+            ], 200);
+        } else {
+
+            // Send welcome email
+            dispatch(new SendEmailJob(
+                $registration->email, 
+                "Welcome to KetBy", 
+                "mail.welcome", 
+                ['first_name' => $registration->first_name]
+            ));
+
+            return response()->json([
+                'success' => true,
+                'message' => "Your account has been confirmed. You can now log in."
+            ], 200);
+
+        }
 
     }
 
