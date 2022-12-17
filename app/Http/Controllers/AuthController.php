@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\Registration;
 use Validator;
@@ -135,7 +136,7 @@ class AuthController extends Controller
         }
 
         // Check if registration exists
-        $registration = Registration::where('token', '=', $token)->first();
+        $registration = Registration::where(DB::raw('BINARY `token`'), $token)->first();
 
         // If the token is invalid
         if(!$registration) {
