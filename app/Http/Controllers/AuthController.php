@@ -31,13 +31,13 @@ class AuthController extends Controller
     public function login(Request $request){
     	$validator = Validator::make($request->all(), [
             'email' => 'required|email',
-            'password' => 'required|string|min:6',
+            'password' => 'required|string',
         ]);
         if ($validator->fails()) {
-            return response()->json(['success' => false, "field_errors" => $validator->errors()], 400);
+            return response()->json(['success' => false, "message" => "", "field_errors" => $validator->errors()], 400);
         }
         if (!$token = auth()->attempt($validator->validated())) {
-            return response()->json(['success' => false, "message" => "Wrong credentials."], 401);
+            return response()->json(['success' => false, "message" => "Wrong credentials. Please try again."], 401);
         }
         return response()->json(['success' => true, 'token' => $this->createNewToken($token)]);
     }
@@ -79,15 +79,13 @@ class AuthController extends Controller
             $token = $generator->charset(StrGen\CharSet::ALPHA_NUMERIC)->length(32)->generate();
         }
 
-        $registration = Registration::create(array_merge(
-            $validator->validated(),
-            [
-                'password' => bcrypt($request->password), 
-                'token' => $token,
-                'first_name' => $firstName,
-                'last_name' => $lastName
-            ]
-        ));
+        $registration = Registration::create([
+            'password' => bcrypt($request->password), 
+            'token' => $token,
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'email' => $request->email
+        ]);
 
         if(!$registration) {
             return response()->json([
@@ -123,7 +121,7 @@ class AuthController extends Controller
         
         // Validate input
         $validator = Validator::make($data, [
-            'token' => 'required|string|min:32|max:64',
+            'token' => 'required|string',
         ]);
 
         $token = $request->token;
@@ -131,7 +129,7 @@ class AuthController extends Controller
         if($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => "This link does not exist or is broken. Please try registering again."
+                'message' => "This link does not exist or is broken. Please try registering again. Error code: C0001"
             ], 200);
         }
 
@@ -142,7 +140,7 @@ class AuthController extends Controller
         if(!$registration) {
             return response()->json([
                 'success' => false,
-                'message' => "This link does not exist or is broken. Please try registering again."
+                'message' => "This link does not exist or is broken. Please try registering again. Error code: C0002"
             ], 200);
         }
 
@@ -169,7 +167,7 @@ class AuthController extends Controller
         if(!$user) {
             return response()->json([
                 'success' => false,
-                'message' => "This link does not exist or is broken. Please try registering again. Error code: C0001"
+                'message' => "This link does not exist or is broken. Please try registering again. Error code: C0003"
             ], 200);
         } else {
 

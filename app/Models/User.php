@@ -29,6 +29,11 @@ class User extends Authenticatable implements JWTSubject
      */
     protected $hidden = [
         'password',
+        'fb_id',
+        'created_at',
+        'updated_at',
+        'remember_token',
+        'id'
     ];
     /**
      * The attributes that should be cast to native types.

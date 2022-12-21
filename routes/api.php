@@ -15,17 +15,17 @@ use App\Http\Controllers\AuthController;
 |
 */
 
-Route::group(['middleware' => 'cors'], function ($router) {
-    // Auth routes
-    Route::group([
-        'middleware' => 'api',
-        'prefix' => 'auth'
-    ], function ($router) {
-        Route::post('/login', [AuthController::class, 'login'])->name('login');
-        Route::post('/register', [AuthController::class, 'register'])->middleware('recaptcha');
-        Route::post('/confirm', [AuthController::class, 'confirm']);
-        Route::post('/logout', [AuthController::class, 'logout']);
-        Route::post('/refresh', [AuthController::class, 'refresh']);
-        Route::get('/status', [AuthController::class, 'status']);    
-    });
+
+// Auth routes
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'auth'
+], function ($router) {
+    Route::post('/login', [AuthController::class, 'login'])->name('login');
+    Route::post('/register', [AuthController::class, 'register'])->middleware('recaptcha');
+    Route::post('/confirm', [AuthController::class, 'confirm']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/refresh', [AuthController::class, 'refresh']);
+    Route::get('/status', [AuthController::class, 'status']);    
 });
+
