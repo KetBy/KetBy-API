@@ -36,4 +36,12 @@ return new class extends Migration
     {
         Schema::dropIfExists('users');
     }
+
+    /**
+     * Get user projects.
+     */
+    public function projects()
+    {
+        return $this->hasMany(Project::class, 'owner_id');
+    }
 };

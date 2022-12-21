@@ -60,4 +60,13 @@ class User extends Authenticatable implements JWTSubject
     public function getJWTCustomClaims() {
         return [];
     }    
+
+    /**
+     * Get user projects.
+     * 
+     */
+    public function projects() 
+    {
+        return $this->hasMany(Project::class, 'owner_id');
+    }
 }
