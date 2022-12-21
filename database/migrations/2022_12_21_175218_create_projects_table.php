@@ -22,6 +22,7 @@ return new class extends Migration
             $table->integer('public')->default(1);
             $table->integer('forked_from')->nullable();
             $table->integer('forks_count')->default(0);
+            $table->integer('stars_count')->default(0);
             $table->integer('views_count')->default(0);
             $table->integer('next_file_index')->default(1);
             $table->string('token')->unique();
