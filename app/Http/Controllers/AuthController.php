@@ -75,7 +75,7 @@ class AuthController extends Controller
         // Generate a random confirmation token
         $generator = new StrGen\Generator();
         $token = $generator->charset(StrGen\CharSet::ALPHA_NUMERIC)->length(32)->generate();
-        while(Registration::where('token', '=', $token)->count() > 0) {
+        while(Registration::where(DB::raw('BINARY `token`'), $token)->count() > 0) {
             $token = $generator->charset(StrGen\CharSet::ALPHA_NUMERIC)->length(32)->generate();
         }
 

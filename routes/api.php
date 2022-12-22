@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ProjectController;
 
 /*
 |--------------------------------------------------------------------------
@@ -15,8 +16,7 @@ use App\Http\Controllers\AuthController;
 |
 */
 
-
-// Auth routes
+// Authentication routes
 Route::group([
     'middleware' => 'api',
     'prefix' => 'auth'
@@ -29,3 +29,11 @@ Route::group([
     Route::get('/status', [AuthController::class, 'status']);    
 });
 
+// Project routes
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'project'
+], function ($router) {
+    Route::get('/', [ProjectController::class, 'index'])->middleware('auth');
+    Route::post('/', [ProjectController::class, 'create'])->middleware('auth');
+});

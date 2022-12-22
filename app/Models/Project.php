@@ -8,6 +8,35 @@ use Illuminate\Database\Eloquent\Model;
 class Project extends Model
 {
     use HasFactory;
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+    protected $fillable = [
+        'title',
+        'description',
+        'thumbnail_url',
+        'owner_id',
+        'public',
+        'forked_from',
+        'forks_count',
+        'stars_count',
+        'views_count',
+        'next_file_index',
+        'token'
+    ];
+    /**
+     * The attributes that should be hidden for arrays.
+     *
+     * @var array
+     */
+    protected $hidden = [
+        'views_count',
+        'owner_id',
+        'created_at',
+        'updated_at'
+    ];
 
     /**
      * Get the files for the project.
@@ -23,5 +52,9 @@ class Project extends Model
     public function owner()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function getCreatedAt() {
+        return date_format($this->created_at, "j M Y");
     }
 }
