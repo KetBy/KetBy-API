@@ -15,10 +15,12 @@ return new class extends Migration
     {
         Schema::create('files', function (Blueprint $table) {
             $table->id();
-            $table->integer('project_id');
+            $table->integer('project_id')->index();
             $table->integer('file_index');
             $table->integer('creator_id');
             $table->string('title');
+            $table->text('content')->nullable();
+            $table->string('file_type_name')->default("qc");
             $table->timestamps();
         });
     }
@@ -47,5 +49,13 @@ return new class extends Migration
     public function project()
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * Get file type.
+     */
+    public function fileType()
+    {
+        return $this->hasOne(FileType::class);
     }
 };

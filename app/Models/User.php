@@ -20,7 +20,8 @@ class User extends Authenticatable implements JWTSubject
         'username',
         'email',
         'password',
-        'avatar_url'
+        'avatar_url',
+        'cover_url'
     ];
     /**
      * The attributes that should be hidden for arrays.
@@ -69,5 +70,15 @@ class User extends Authenticatable implements JWTSubject
     public function projects() 
     {
         return $this->hasMany(Project::class, 'owner_id');
+    }
+
+    public function getAvatarUrlAttribute() 
+    {
+        return env("CDN_URL") . $this->attributes['avatar_url'];
+    }
+
+    public function getCoverUrlAttribute() 
+    {
+        return env("CDN_URL") . $this->attributes['cover_url'];
     }
 }

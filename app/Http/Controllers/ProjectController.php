@@ -57,6 +57,9 @@ class ProjectController extends Controller
             $project->next_file_index += 1;
             $project->save();
 
+            $project->files_count = 1;
+            $project->date = $project->getCreatedAt();
+
             return response()->json([
                 'success' => true,
                 'message' => "Your new project has been created. You are being redirected...",

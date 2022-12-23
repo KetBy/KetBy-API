@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('title');
             $table->string('description')->nullable();
             $table->string('thumbnail_url')->nullable();
-            $table->integer('owner_id');
+            $table->integer('owner_id')->index();
             $table->integer('public')->default(1);
             $table->integer('forked_from')->nullable();
             $table->integer('forks_count')->default(0);
