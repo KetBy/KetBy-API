@@ -81,4 +81,8 @@ class User extends Authenticatable implements JWTSubject
     {
         return env("CDN_URL") . $this->attributes['cover_url'];
     }
+
+    public function getCreatedAt() {
+        return date_format($this->created_at, "j M Y");
+    }
 }

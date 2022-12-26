@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\UserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,6 +35,15 @@ Route::group([
     'middleware' => 'api',
     'prefix' => 'project'
 ], function ($router) {
-    Route::get('/', [ProjectController::class, 'index'])->middleware('auth');
+    // Route::get('/', [ProjectController::class, 'index'])->middleware('auth');
     Route::post('/', [ProjectController::class, 'create'])->middleware('auth');
+});
+
+// User routes
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'user'
+], function ($router) {
+    Route::get('/{username}', [UserController::class, 'index']);
+    Route::get('/{username}/projects', [UserController::class, 'getProjects']);
 });
