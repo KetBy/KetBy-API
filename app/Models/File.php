@@ -28,4 +28,8 @@ class File extends Model
         'created_at',
         'updated_at'
     ];
+
+    public function getMeta() {
+        return json_decode($this->meta);
+    }
 }

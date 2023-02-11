@@ -66,8 +66,11 @@ class UserController extends Controller
             }
 
             foreach($projects as &$project) {
-                $project->files_count = $project->files()->count();
+                $files = $project->files;
+                $project->files_count = $files->count();
                 $project->date = $project->getCreatedAt();
+                $project->first_file_index = min(array_column($files->all(), "file_index"));
+                unset($project->files);
             }
 
             return response()->json([

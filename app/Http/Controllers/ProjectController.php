@@ -48,7 +48,7 @@ class ProjectController extends Controller
 
             // Create a new file
             $file = new File([
-                'title' => "New file",
+                'title' => "New circuit",
                 'creator_id' => $user->id,
                 'file_index' => $project->next_file_index
             ]);
@@ -75,6 +75,49 @@ class ProjectController extends Controller
         }
     }
 
+    public function getProject(Request $request) {
+        try {
+            $token = $request->token;
+        
+            $project = Project::where('token', $token)->first();
+
+            // Access checks 
+            // ... todo
+
+            if (!$project) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "This project does not exist,"
+                ], 404);
+            }
+
+            $files = $project->files()->get();
+            foreach ($files as &$file) {
+                $file->meta = $file->getMeta();
+                if ($file->meta == NULL) {
+                    $file->meta = [
+                        "qubits" => 1,
+                        "bits" => 0
+                    ];
+                }
+            }
+
+            return response()->json([
+                "success" => true,
+                "project" => $project,
+                "files" => $files
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                "success" => false,
+                "message" => "Something went wrong. Please try again later. Error code: P_GETP_0001",
+                "exception" => $e->message
+            ], 400);
+        }
+    }
+
+    /** OUTDATED */
     public function index(Request $request) {
         try {
             $user = auth()->user();

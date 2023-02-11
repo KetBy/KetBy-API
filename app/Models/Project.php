@@ -54,7 +54,8 @@ class Project extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function getCreatedAt() {
+    public function getCreatedAt() 
+    {
         return date_format($this->created_at, "j M Y");
     }
 }

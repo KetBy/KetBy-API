@@ -37,6 +37,7 @@ Route::group([
 ], function ($router) {
     // Route::get('/', [ProjectController::class, 'index'])->middleware('auth');
     Route::post('/', [ProjectController::class, 'create'])->middleware('auth');
+    Route::get('/{token}', [ProjectController::class, 'getProject']);
 });
 
 // User routes
