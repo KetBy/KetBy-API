@@ -38,6 +38,7 @@ Route::group([
     // Route::get('/', [ProjectController::class, 'index'])->middleware('auth');
     Route::post('/', [ProjectController::class, 'create'])->middleware('auth');
     Route::get('/{token}', [ProjectController::class, 'getProject']);
+    Route::put('/{token}/{fileIndex}', [ProjectController::class, 'updateFile']);
 });
 
 // User routes

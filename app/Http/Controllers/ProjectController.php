@@ -118,6 +118,64 @@ class ProjectController extends Controller
         }
     }
 
+    public function updateFile(Request $request) {
+        try {
+            /*
+            $validator = Validator::make($request->all(), [
+                'meta' => 'required',
+                'content' => 'required',
+            ]);
+            */
+            $meta = $request->meta?? [];
+            $content = $request->content?? [];
+
+            $token = $request->token;
+            $fileIndex = (int) $request->fileIndex;
+        
+            $project = Project::where('token', $token)->first();
+
+            if (!$project) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "This project does not exist."
+                ], 404);
+            }
+
+            $file = File::where("project_id", "=", $project->id)->where("file_index", "=", $fileIndex)->first();
+
+            if (!$file) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "This file does not exist.",
+                    "files" => $project->files()->get()
+                ], 404);
+            }
+
+            $file->meta = json_encode($meta);
+            $file->content = json_encode($content);
+            if ($file->save()) {
+                return response()->json([
+                    "success" => true,
+                    "file" => $file
+                ], 200);
+            } else {
+                return response()->json([
+                    "success" => false,
+                    "message" => "Something went wrong. Please try again later. Error code: P_FUPD_0002",
+                ], 400);
+            }
+            
+            
+
+        } catch(Exception $e) {
+            return response()->json([
+                "success" => false,
+                "message" => "Something went wrong. Please try again later. Error code: P_FUPD_0001",
+                "exception" => $e->message
+            ], 400);
+        }
+    }
+
     /** OUTDATED */
     public function index(Request $request) {
         try {
