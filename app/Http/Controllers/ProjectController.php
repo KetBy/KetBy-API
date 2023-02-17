@@ -94,6 +94,7 @@ class ProjectController extends Controller
             $files = $project->files()->get();
             foreach ($files as &$file) {
                 $file->meta = $file->getMeta();
+                $file->content = $file->getContent();
                 if ($file->meta == NULL) {
                     $file->meta = [
                         "qubits" => 1,

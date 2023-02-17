@@ -32,4 +32,9 @@ class File extends Model
     public function getMeta() {
         return json_decode($this->meta);
     }
+
+    public function getContent() {
+        $data = json_decode($this->content);
+        return $data? $data : [];
+    }
 }
