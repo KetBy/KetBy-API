@@ -120,12 +120,9 @@ class ProjectController extends Controller
 
     public function updateFile(Request $request) {
         try {
-            /*
-            $validator = Validator::make($request->all(), [
-                'meta' => 'required',
-                'content' => 'required',
-            ]);
-            */
+            
+            $user = auth()->user();
+
             $meta = $request->meta?? [];
             $content = $request->content?? [];
 
@@ -147,26 +144,35 @@ class ProjectController extends Controller
                 return response()->json([
                     "success" => false, 
                     "message" => "This file does not exist.",
-                    "files" => $project->files()->get()
                 ], 404);
             }
 
-            $file->meta = json_encode($meta);
-            $file->content = json_encode($content);
-            if ($file->save()) {
-                return response()->json([
-                    "success" => true,
-                    "file" => $file
-                ], 200);
+            // If the user has update permissions
+            if ($this->getPermissions($user, $project) >= 2) {
+                $file->meta = json_encode($meta);
+                $file->content = json_encode($content);
+                if ($file->save()) {
+                    return response()->json([
+                        "success" => true,
+                        "status" => "All changes saved",
+                        "results" => null
+                    ], 200);
+                } else {
+                    return response()->json([
+                        "success" => false,
+                        "message" => "Something went wrong. Please try again later. Error code: P_FUPD_0002",
+                        "status" => "Could not save changes P_FUPD_0002",
+                        "results" => null
+                    ], 400);
+                }
             } else {
                 return response()->json([
                     "success" => false,
-                    "message" => "Something went wrong. Please try again later. Error code: P_FUPD_0002",
+                    "status" => "Log in to save changes",
+                    "results" => null
                 ], 400);
             }
             
-            
-
         } catch(Exception $e) {
             return response()->json([
                 "success" => false,
@@ -176,30 +182,23 @@ class ProjectController extends Controller
         }
     }
 
-    /** OUTDATED */
-    public function index(Request $request) {
-        try {
-            $user = auth()->user();
-
-            $projects = $user->projects()->get();
-
-            foreach($projects as &$project) {
-                $project->files_count = $project->files()->count();
-                $project->date = $project->getCreatedAt();
-            }
-
-
-            return response()->json([
-                'projects' => $projects
-            ], 200);
-        } catch(Exception $e) {
-            return response()->json([
-                "success" => false,
-                "message" => "Something went wrong. Please try again later. Error code: P_INDEX_0001",
-                "exception" => $e->message
-            ], 400);
+    /**
+     * Get an user's permissions for a project.
+     * 0 - no access
+     * 1 - read access
+     * 2 - update access
+     * 
+     * @param Class::User $user
+     * @param Class::Project $project
+     * @return integer $permission
+     */
+    protected function getPermissions($user, $project) {
+        if (!$user) {
+            return 0;
         }
-        
-        
+        if ($project->owner_id == $user->id) {
+            return 2;
+        }
+        return 0;
     }
 }
