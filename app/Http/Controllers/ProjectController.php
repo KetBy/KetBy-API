@@ -182,6 +182,75 @@ class ProjectController extends Controller
         }
     }
 
+    public function createFile(Request $request) {
+        $user = auth()->user();
+
+        $token = $request->token;
+        $title = $request->title?? "Unnamed circuit";
+
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string|between:2,100',
+        ]);
+
+        if($validator->fails()){
+            return response()->json([
+                'success' => false,
+                'field_errors' => $validator->messages()
+            ], 400);
+        }
+
+        $project = Project::where('token', $token)->first();
+        if (!$project) {
+            return response()->json([
+                "success" => false, 
+                "message" => "This project does not exist."
+            ], 404);
+        }
+
+        // If the user has update permissions
+        if ($this->getPermissions($user, $project) >= 2) {
+            // Create a new file
+            $file = new File([
+                'title' => $title,
+                'creator_id' => $user->id,
+                'file_index' => $project->next_file_index
+            ]);
+            $file = $project->files()->save($file);
+
+            $project->next_file_index += 1;
+            $project->save();
+            
+            $project->date = $project->getCreatedAt();
+
+            $files = $project->files()->get();
+            foreach ($files as &$file) {
+                $file->meta = $file->getMeta();
+                $file->content = $file->getContent();
+                if ($file->meta == NULL) {
+                    $file->meta = [
+                        "qubits" => 1,
+                        "bits" => 0
+                    ];
+                }
+            }
+            $project->files_count = count($files);
+
+            return response()->json([
+                "success" => true,
+                "project" => $project,
+                "files" => $files,
+                "file" => $file
+            ], 200);
+            
+        } else {
+            return response()->json([
+                "success" => false,
+                "status" => "Log in to create new files",
+                "results" => null
+            ], 400);
+        }
+    }
+
     /**
      * Get an user's permissions for a project.
      * 0 - no access

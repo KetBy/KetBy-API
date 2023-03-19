@@ -39,6 +39,7 @@ Route::group([
     Route::post('/', [ProjectController::class, 'create'])->middleware('auth');
     Route::get('/{token}', [ProjectController::class, 'getProject']);
     Route::put('/{token}/{fileIndex}', [ProjectController::class, 'updateFile']);
+    Route::post('/{token}', [ProjectController::class, 'createFile']);
 });
 
 // User routes
