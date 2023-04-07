@@ -36,10 +36,11 @@ Route::group([
     'prefix' => 'project'
 ], function ($router) {
     // Route::get('/', [ProjectController::class, 'index'])->middleware('auth');
-    Route::post('/', [ProjectController::class, 'create'])->middleware('auth');
-    Route::get('/{token}', [ProjectController::class, 'getProject']);
-    Route::put('/{token}/{fileIndex}', [ProjectController::class, 'updateFile']);
-    Route::post('/{token}', [ProjectController::class, 'createFile']);
+    Route::post('/', [ProjectController::class, 'create'])->middleware('auth'); // create a new project
+    Route::get('/{token}', [ProjectController::class, 'getProject']); // get project data
+    Route::post('/{token}', [ProjectController::class, 'createFile']); // create a new file
+    Route::put('/{token}/{fileIndex}', [ProjectController::class, 'updateFile']); // update a file
+    Route::delete('/{token}/{fileIndex}', [ProjectController::class, 'deleteFile']); // delete a file
 });
 
 // User routes

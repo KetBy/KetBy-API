@@ -76,6 +76,7 @@ class ProjectController extends Controller
     }
 
     public function getProject(Request $request) {
+        usleep(50000);
         try {
             $token = $request->token;
         
@@ -247,6 +248,65 @@ class ProjectController extends Controller
                 "success" => false,
                 "status" => "Log in to create new files",
                 "results" => null
+            ], 400);
+        }
+    }
+
+    public function deleteFile(Request $request) {
+        try {
+            
+            $user = auth()->user();
+
+            $token = $request->token;
+            $fileIndex = (int) $request->fileIndex;
+        
+            $project = Project::where('token', $token)->first();
+
+            if (!$project) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "This project does not exist."
+                ], 404);
+            }
+
+            $file = File::where("project_id", "=", $project->id)->where("file_index", "=", $fileIndex)->first();
+
+            if (!$file) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "This file does not exist.",
+                ], 404);
+            }
+
+            // If the user has update permissions
+            if ($this->getPermissions($user, $project) >= 2) {
+                if ($file->delete()) {
+                    return response()->json([
+                        "success" => true,
+                        "status" => "The file has been deleted.",
+                        "results" => null
+                    ], 200);
+                } else {
+                    return response()->json([
+                        "success" => false,
+                        "message" => "Something went wrong. Please try again later. Error code: P_FDEL_0002",
+                        "status" => "Could not save changes P_FDEL_0002",
+                        "results" => null
+                    ], 400);
+                }
+            } else {
+                return response()->json([
+                    "success" => false,
+                    "status" => "Log in to delete file",
+                    "results" => null
+                ], 400);
+            }
+            
+        } catch(Exception $e) {
+            return response()->json([
+                "success" => false,
+                "message" => "Something went wrong. Please try again later. Error code: P_FDEL_0001",
+                "exception" => $e->message
             ], 400);
         }
     }
