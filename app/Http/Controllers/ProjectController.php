@@ -10,6 +10,7 @@ use App\Models\Registration;
 use App\Models\Project;
 use App\Models\File;
 use Validator;
+use App\Http\Controllers\QiskitController;
 
 use PHLAK\StrGen;
 
@@ -92,7 +93,7 @@ class ProjectController extends Controller
                 ], 404);
             }
 
-            $files = $project->files()->get();
+            $files = $project->files()->orderBy('title')->get();
             foreach ($files as &$file) {
                 $file->meta = $file->getMeta();
                 $file->content = $file->getContent();
@@ -156,7 +157,7 @@ class ProjectController extends Controller
                     return response()->json([
                         "success" => true,
                         "status" => "All changes saved",
-                        "results" => null
+                        "results" => $this->runFile($file)
                     ], 200);
                 } else {
                     return response()->json([
@@ -329,5 +330,15 @@ class ProjectController extends Controller
             return 2;
         }
         return 0;
+    }
+
+    /**
+     * Run a file's instructions in Qiskit.
+     * 
+     * @param Class::File $file
+     * @return Object
+     */
+    protected function runFile($file) {
+        return QiskitController::getInfo($file->getMeta()->qubits, $file->getContent());
     }
 }
