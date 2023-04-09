@@ -10,7 +10,7 @@ use App\Models\Registration;
 use App\Models\Project;
 use App\Models\File;
 use Validator;
-use App\Http\Controllers\QiskitController;
+use App\Http\Controllers\QuantumController;
 
 use PHLAK\StrGen;
 
@@ -127,6 +127,33 @@ class ProjectController extends Controller
 
             $meta = $request->meta?? [];
             $content = $request->content?? [];
+
+            foreach ($content as $instruction) {
+                if (!in_array($instruction["gate"], QuantumController::$GATES)) {
+                    return response()->json([
+                        "success" => false, 
+                        "message" => "Undefined gate " . $instruction["gate"]
+                    ], 500);
+                } else {
+                    foreach ($instruction["qubits"] as $qubit) {
+                        if (!is_int($qubit) || $qubit < 0 || $qubit >= $meta["qubits"]) {
+                            return response()->json([
+                                "success" => false, 
+                                "message" => "Malformed gate with uid = " . $instruction["uid"] 
+                                    . ". Qubit $qubit's gate is invalid."
+                            ], 200);
+                        }
+                    }
+                    if (QuantumController::$GATES_DATA[$instruction["gate"]]["qubits"] != count($instruction["qubits"])) {
+                        return response()->json([
+                            "success" => false, 
+                            "message" => "Malformed gate " . $instruction["gate"] 
+                                . ". It requires " . QuantumController::$GATES_DATA[$instruction["gate"]]["qubits"] 
+                                . " qubits, but " . count($instruction["qubits"]) . " were given"
+                        ], 500);
+                    }
+                }
+            }
 
             $token = $request->token;
             $fileIndex = (int) $request->fileIndex;
@@ -339,6 +366,6 @@ class ProjectController extends Controller
      * @return Object
      */
     protected function runFile($file) {
-        return QiskitController::getInfo($file->getMeta()->qubits, $file->getContent());
+        return QuantumController::getInfo($file->getMeta()->qubits, $file->getContent());
     }
 }
