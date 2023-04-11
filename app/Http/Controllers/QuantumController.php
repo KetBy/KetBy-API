@@ -37,7 +37,7 @@ class QuantumController extends Controller
             "probabilities" => null
         ];
 
-        if ($qubits > 4) {
+        if ($qubits > 5) {
             return $res;
         }
 
@@ -46,7 +46,11 @@ class QuantumController extends Controller
 
         // Prepare the instructions string
         foreach ($gates as $gate) {
-            $instructionsStr .= $gate->gate . " " . implode(" ", $gate->qubits) . " ";
+            if ($gate->gate == "CX" || $gate->gate == "Tfl") {
+                $instructionsStr .= $gate->gate . " " . implode(" ", array_reverse($gate->qubits)) . " ";
+            } else {
+                $instructionsStr .= $gate->gate . " " . implode(" ", $gate->qubits) . " ";
+            }
         }
 
         $command = self::$PY_COMMAND . " " . getcwd() . self::$PY_DIR . "/get_info.py $qubits $instructions $instructionsStr";

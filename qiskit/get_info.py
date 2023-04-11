@@ -27,7 +27,7 @@ for _ in range(num_instructions):
         qubits = [int(sys.argv[pos+1])]
         pos += 2
     elif gate in ['CX', 'SWAP']:
-        qubits = [int(sys.argv[pos + 1]), int(sys.argv[pos + 2])]
+        qubits = [int(sys.argv[pos + 1]), int(sys.argv[pos + 2])] # KetBy first saves the target, then the control (as opposed to qiskit)
         pos += 3
     elif gate in ['Tfl']:
         qubits = [int(sys.argv[pos + 1]), int(sys.argv[pos + 2]), int(sys.argv[pos + 3])]
@@ -45,6 +45,10 @@ for instruction in instructions:
         circuit.x(instruction["qubits"][0])
     if instruction["gate"] == 'CX':
         circuit.cx(instruction["qubits"][0], instruction["qubits"][1])
+    if instruction["gate"] == "Tfl":
+        circuit.toffoli(instruction["qubits"][0], instruction["qubits"][1], instruction["qubits"][2])
+    if instruction["gate"] == "SWAP":
+        circuit.swap(instruction["qubits"][0], instruction["qubits"][1])
     
 backend = Aer.get_backend('statevector_simulator')
 
