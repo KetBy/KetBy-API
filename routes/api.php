@@ -41,6 +41,7 @@ Route::group([
     Route::post('/{token}', [ProjectController::class, 'createFile']); // create a new file
     Route::put('/{token}/{fileIndex}', [ProjectController::class, 'updateFile']); // update a file
     Route::delete('/{token}/{fileIndex}', [ProjectController::class, 'deleteFile']); // delete a file
+    Route::get('/{token}/{fileIndex}/stats', [ProjectController::class, 'getStats']); // get a circuit statistics 
 });
 
 // User routes

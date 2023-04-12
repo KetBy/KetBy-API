@@ -184,7 +184,7 @@ class ProjectController extends Controller
                     return response()->json([
                         "success" => true,
                         "status" => "All changes saved",
-                        "results" => $this->runFile($file)
+                        // "results" => $this->runFile($file)
                     ], 200);
                 } else {
                     return response()->json([
@@ -339,6 +339,74 @@ class ProjectController extends Controller
         }
     }
 
+    public function getStats(Request $request) {
+        try {
+            
+            $user = auth()->user();
+
+            $token = $request->token;
+            $fileIndex = (int) $request->fileIndex;
+        
+            $project = Project::where('token', $token)->first();
+
+            if (!$project) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "This project does not exist."
+                ], 404);
+            }
+
+            $file = File::where("project_id", "=", $project->id)->where("file_index", "=", $fileIndex)->first();
+
+            if (!$file) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "This file does not exist.",
+                ], 404);
+            }
+
+            $time = time();
+
+            // If the user has read permissions
+            if ($this->getPermissions($user, $project) >= 1) {
+                // Check if the circuit only has <= 5 qubits
+                if ($file->getMeta()->qubits > 5) {
+                    if ($file->getMeta()->qubits <= 10) {
+                        return response()->json([
+                            "success" => false,
+                            "message" => "Outcome probabilities are shown for circuits with up to 5 qubits. For circuits with less than 10 qubits, you can still download the probabilities as a CSV file.",
+                            "download_url" => env("APP_URL") . "/project/" . $project->token . "/" . $file->file_index . "/stats.csv?user_id=" . $user->id . "&t=" . $time . "&token=" . hash("sha256", $user->id . $time . env("TOKEN_SALT")) 
+                        ], 200);
+                    } else {
+                        return response()->json([
+                            "success" => false,
+                            "message" => "Outcome probabilities can only be computed for circuits with up to 10 qubits.",
+                            "download_url" => NULL
+                        ], 200);
+                    }
+                }
+                return response()->json([
+                    "success" => true,
+                    "results" => $this->_getStats($file),
+                    "download_url" => env("APP_URL") . "/project/" . $project->token . "/" . $file->file_index . "/stats.csv?user_id=" . $user->id . "&t=" . $time . "&token=" . hash("sha256", $user->id . $time . env("TOKEN_SALT")) 
+                ], 200);
+            } else {
+                return response()->json([
+                    "success" => false,
+                    "status" => "Log in to access this",
+                    "results" => null
+                ], 400);
+            }
+            
+        } catch(Exception $e) {
+            return response()->json([
+                "success" => false,
+                "message" => "Something went wrong. Please try again later. Error code: P_FSTATS_0001",
+                "exception" => $e->message
+            ], 400);
+        }
+    }
+
     /**
      * Get an user's permissions for a project.
      * 0 - no access
@@ -365,7 +433,7 @@ class ProjectController extends Controller
      * @param Class::File $file
      * @return Object
      */
-    protected function runFile($file) {
+    protected function _getStats($file) {
         return QuantumController::getInfo($file->getMeta()->qubits, $file->getContent());
     }
 }

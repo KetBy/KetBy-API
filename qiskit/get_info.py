@@ -23,7 +23,7 @@ pos = 3
 for _ in range(num_instructions):
     gate = sys.argv[pos]
     qubits = []
-    if gate in ['I', 'H', 'X']:
+    if gate in ['I', 'H', 'X', 'Z', 'S', 'S+', 'T', 'T+']:
         qubits = [int(sys.argv[pos+1])]
         pos += 2
     elif gate in ['CX', 'SWAP']:
@@ -49,6 +49,16 @@ for instruction in instructions:
         circuit.toffoli(instruction["qubits"][0], instruction["qubits"][1], instruction["qubits"][2])
     if instruction["gate"] == "SWAP":
         circuit.swap(instruction["qubits"][0], instruction["qubits"][1])
+    if instruction["gate"] == "Z":
+        circuit.z(instruction["qubits"][0])
+    if instruction["gate"] == "S":
+        circuit.s(instruction["qubits"][0])
+    if instruction["gate"] == "S+":
+        circuit.sdg(instruction["qubits"][0])
+    if instruction["gate"] == "T":
+        circuit.t(instruction["qubits"][0])
+    if instruction["gate"] == "T+":
+        circuit.tdg(instruction["qubits"][0])
     
 backend = Aer.get_backend('statevector_simulator')
 

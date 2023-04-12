@@ -9,7 +9,7 @@ class QuantumController extends Controller
     private static $PY_COMMAND = "python3";
     private static $PY_DIR = "/../qiskit"; // Qiskit scripts directory relative to the /public folder
     public static $GATES = [
-        'I', 'H', 'X', 'CX', 'Tfl', 'SWAP'
+        'I', 'H', 'X', 'CX', 'Tfl', 'SWAP', 'Z', 'S', 'S+', 'T', 'T+'
     ];
     public static $GATES_DATA = [
         'I' => [
@@ -29,6 +29,21 @@ class QuantumController extends Controller
         ],
         'SWAP' => [
             'qubits' => 2
+        ],
+        'Z' => [
+            'qubits' => 1
+        ],
+        'S' => [
+            'qubits' => 1
+        ],
+        'S+' => [
+            'qubits' => 1
+        ],
+        'T' => [
+            'qubits' => 1
+        ],
+        'T+' => [
+            'qubits' => 1
         ]
     ];
 
