@@ -135,15 +135,6 @@ class ProjectController extends Controller
                         "message" => "Undefined gate " . $instruction["gate"]
                     ], 500);
                 } else {
-                    foreach ($instruction["qubits"] as $qubit) {
-                        if (!is_int($qubit) || $qubit < 0 || $qubit >= $meta["qubits"]) {
-                            return response()->json([
-                                "success" => false, 
-                                "message" => "Malformed gate with uid = " . $instruction["uid"] 
-                                    . ". Qubit $qubit's gate is invalid."
-                            ], 200);
-                        }
-                    }
                     if (QuantumController::$GATES_DATA[$instruction["gate"]]["qubits"] != count($instruction["qubits"])) {
                         return response()->json([
                             "success" => false, 
@@ -151,6 +142,32 @@ class ProjectController extends Controller
                                 . ". It requires " . QuantumController::$GATES_DATA[$instruction["gate"]]["qubits"] 
                                 . " qubits, but " . count($instruction["qubits"]) . " were given"
                         ], 500);
+                    }
+                    if (QuantumController::$GATES_DATA[$instruction["gate"]]["parameters"] != count($instruction["params"])) {
+                        return response()->json([
+                            "success" => false, 
+                            "message" => "Malformed gate " . $instruction["gate"] 
+                                . ". It requires " . QuantumController::$GATES_DATA[$instruction["gate"]]["parameters"] 
+                                . " parameters, but " . count($instruction["params"]) . " were given"
+                        ], 500);
+                    }
+                    foreach ($instruction["qubits"] as $qubit) {
+                        if (!is_int($qubit) || $qubit < 0 || $qubit >= $meta["qubits"]) {
+                            return response()->json([
+                                "success" => false, 
+                                "message" => "Malformed gate with uid = " . $instruction["uid"] 
+                                    . ". `$qubit` is not a valid qubit."
+                            ], 500);
+                        }
+                    }
+                    foreach ($instruction["params"] as $parameter) {
+                        if (!QuantumController::validateSimpleFraction($parameter)) {
+                            return response()->json([
+                                "success" => false, 
+                                "message" => "Malformed gate with uid = " . $instruction["uid"] 
+                                    . ". Parameter value `$parameter` is invalid."
+                            ], 500);
+                        }
                     }
                 }
             }

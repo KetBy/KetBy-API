@@ -1,6 +1,6 @@
 import sys
 from qiskit import QuantumCircuit, Aer, quantum_info
-from utils import convert_to_binary
+from utils import convert_to_binary, eval_simple_fraction
 
 # Call example: 
 # `python3 get_info.py 2 5 CX 0 1 H 0 H 0 I 1 H 1`
@@ -23,6 +23,7 @@ pos = 3
 for _ in range(num_instructions):
     gate = sys.argv[pos]
     qubits = []
+    parameters = []
     if gate in ['I', 'H', 'X', 'Z', 'S', 'S+', 'T', 'T+']:
         qubits = [int(sys.argv[pos+1])]
         pos += 2
@@ -32,7 +33,11 @@ for _ in range(num_instructions):
     elif gate in ['Tfl']:
         qubits = [int(sys.argv[pos + 1]), int(sys.argv[pos + 2]), int(sys.argv[pos + 3])]
         pos += 4
-    instructions.append({"gate": gate, "qubits": qubits})
+    elif gate in ['P']:
+        qubits = [int(sys.argv[pos + 1])]
+        parameters = [eval_simple_fraction(sys.argv[pos + 2])]
+        pos += 3
+    instructions.append({"gate": gate, "qubits": qubits, "parameters": parameters})
 
 # Create a quantum circuit with the specified number of qubits
 circuit = QuantumCircuit(num_qubits)
@@ -59,6 +64,8 @@ for instruction in instructions:
         circuit.t(instruction["qubits"][0])
     if instruction["gate"] == "T+":
         circuit.tdg(instruction["qubits"][0])
+    if instruction["gate"] == "P":
+        circuit.p(instruction["parameters"][0], instruction["qubits"][0])
     
 backend = Aer.get_backend('statevector_simulator')
 

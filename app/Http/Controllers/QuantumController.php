@@ -9,41 +9,56 @@ class QuantumController extends Controller
     private static $PY_COMMAND = "python3";
     private static $PY_DIR = "/../qiskit"; // Qiskit scripts directory relative to the /public folder
     public static $GATES = [
-        'I', 'H', 'X', 'CX', 'Tfl', 'SWAP', 'Z', 'S', 'S+', 'T', 'T+'
+        'I', 'H', 'X', 'CX', 'Tfl', 'SWAP', 'Z', 'S', 'S+', 'T', 'T+', 'P'
     ];
     public static $GATES_DATA = [
         'I' => [
-            'qubits' => 1
+            'qubits' => 1,
+            'parameters' => 0
         ],
         'H' => [
-            'qubits' => 1
+            'qubits' => 1,
+            'parameters' => 0
         ],
         'X' => [
-            'qubits' => 1
+            'qubits' => 1,
+            'parameters' => 0
         ],
         'CX' => [
-            'qubits' => 2
+            'qubits' => 2,
+            'parameters' => 0
         ],
         'Tfl' => [
-            'qubits' => 3
+            'qubits' => 3,
+            'parameters' => 0
         ],
         'SWAP' => [
-            'qubits' => 2
+            'qubits' => 2,
+            'parameters' => 0
         ],
         'Z' => [
-            'qubits' => 1
+            'qubits' => 1,
+            'parameters' => 0
         ],
         'S' => [
-            'qubits' => 1
+            'qubits' => 1,
+            'parameters' => 0
         ],
         'S+' => [
-            'qubits' => 1
+            'qubits' => 1,
+            'parameters' => 0
         ],
         'T' => [
-            'qubits' => 1
+            'qubits' => 1,
+            'parameters' => 0
         ],
         'T+' => [
-            'qubits' => 1
+            'qubits' => 1,
+            'parameters' => 0
+        ],
+        'P' => [
+            'qubits' => 1,
+            'parameters' => 1
         ]
     ];
 
@@ -64,7 +79,11 @@ class QuantumController extends Controller
             if ($gate->gate == "CX" || $gate->gate == "Tfl") {
                 $instructionsStr .= $gate->gate . " " . implode(" ", array_reverse($gate->qubits)) . " ";
             } else {
-                $instructionsStr .= $gate->gate . " " . implode(" ", $gate->qubits) . " ";
+                if ($gate->gate == "P") {
+                    $instructionsStr .= $gate->gate . " " . implode(" ", $gate->qubits) . " '" . $gate->params[0] . "' ";
+                } else {
+                    $instructionsStr .= $gate->gate . " " . implode(" ", $gate->qubits) . " ";
+                }
             }
         }
 
@@ -82,9 +101,15 @@ class QuantumController extends Controller
                 ];
             }
             $res["probabilities"] = $probabilities;
+            // $res["_command"] = $command;
         }
 
         return $res;
+    }
+
+    public static function validateSimpleFraction($expression) {
+        $re = '/^\-?(\d+|\d*pi)(\/(\-?(\d+|\d*pi)))?$/';
+        return preg_match($re, $expression);
     }
 
 }
