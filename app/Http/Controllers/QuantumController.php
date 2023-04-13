@@ -92,7 +92,8 @@ class QuantumController extends Controller
 
     public static function getInfo($qubits, $gates) {
         $res = [
-            "probabilities" => null
+            "probabilities" => null,
+            "qubits" => null
         ];
 
         if ($qubits > 5) {
@@ -124,14 +125,30 @@ class QuantumController extends Controller
         $result = exec(stripslashes($command), $output, $resultCode);
 
         if ($resultCode == 0) {
-            $probabilities = [];
+            $probabilities_arr = [];
+            $qubits_arr = [];
+            $i = 0;
             foreach ($output as $line) {
-                $probabilities[] = [
-                    "value" => explode(" ", $line)[0], 
-                    "probability" => floatval(explode(" ", $line)[1])
-                ];
+                // Get the probabilities of all possible outcomes
+                if ($i < $qubits ** 2 - 1) {
+                    $probabilities_arr[] = [
+                        "value" => explode(" ", $line)[0], 
+                        "probability" => round(floatval(explode(" ", $line)[1]), 6)
+                    ];
+                }
+                // Get phase disk data
+                // Get the probability of each qubit to be in state 1
+                if ($i >= $qubits ** 2 - 1 && $i < $qubits ** 3) {
+                    $qubits_arr[$i - $qubits ** 2 + 1] = [
+                        "probability_1" => round(floatval(explode(" ", $line)[1]), 6),
+                        "phase" => round(floatval(explode(" ", $line)[2]), 6),
+                        "phase_expr" => explode(" ", $line)[3]
+                    ];
+                }
+                $i += 1; 
             }
-            $res["probabilities"] = $probabilities;
+            $res["probabilities"] = $probabilities_arr;
+            $res["qubits"] = $qubits_arr;
         }
 
         $res["_command"] = $command;

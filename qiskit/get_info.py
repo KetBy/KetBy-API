@@ -1,6 +1,9 @@
 import sys
 from qiskit import QuantumCircuit, Aer, quantum_info
 from utils import convert_to_binary, eval_simple_fraction
+import numpy as np
+from fractions import Fraction
+import math
 
 # Call example: 
 # `python3 get_info.py 2 5 CX 0 1 H 0 H 0 I 1 H 1`
@@ -90,12 +93,61 @@ for instruction in instructions:
         circuit.sxdg(instruction["qubits"][0])
     
 backend = Aer.get_backend('statevector_simulator')
+result = backend.run(circuit, shots=1).result()
+statevector = np.array(result.get_statevector())
 
-outputstate = backend.run(circuit, shots=1).result().get_statevector()
+probs = quantum_info.Statevector(statevector).probabilities()
+counts = result.get_counts()
 
-probs = quantum_info.Statevector(outputstate).probabilities()
+# Find probabilities of all possible outcomes
+for i in range(2**num_qubits):
+    outcome = convert_to_binary(i, num_qubits)
+    print("{} {}".format(outcome, counts.get(outcome) * 100 if counts.get(outcome) else 0))
 
-i = 0
-for prob in probs:
-    print(convert_to_binary(i, num_qubits), prob * 100)
-    i += 1
+# Compute the probability of each qubit being in state "1"
+num_shots = sum(counts.values())
+qubit_probs = [0] * num_qubits
+for outcome, count in counts.items():
+    for qubit, bit in enumerate(outcome[::-1]):
+        if bit == '1':
+            qubit_probs[qubit] += count
+for qubit in range(num_qubits):
+    qubit_probs[qubit] /= num_shots
+    qubit_probs[qubit] *= 100
+
+# Compute the phase of each qubit
+phases = []
+for i in range(num_qubits):
+    basis_state_0 = np.zeros(2**num_qubits)
+    basis_state_0[0] = 1
+    basis_state_1 = np.zeros(2**num_qubits)
+    basis_state_1[2**i] = 1
+    projection_0 = np.dot(basis_state_0, statevector)
+    projection_1 = np.dot(basis_state_1, statevector)
+    phase = np.angle(projection_1 / projection_0)
+    numerator, denominator = Fraction(phase / np.pi).limit_denominator(100).as_integer_ratio()
+    expression = ""
+    if numerator == 0:
+        expression = "0"
+    elif abs(numerator) == 1:
+        if numerator == -1:
+            if denominator == 1:
+                expression = "-pi"
+            else:
+                expression = "-pi/{}".format(denominator)
+        else:
+            if denominator == 1:
+                expression = "-pi"
+            else:
+                expression = "-pi/{}".format(denominator)
+    else:
+        if denominator == 1:
+            expression = "{}pi".format(numerator)
+        else:
+            expression = "{}pi/{}".format(numerator, denominator)
+    phase_deg = math.degrees(phase)
+    phases.append((phase_deg, expression))
+
+for i in range(num_qubits):
+    print(i, qubit_probs[i], phases[i][0], phases[i][1])
+
