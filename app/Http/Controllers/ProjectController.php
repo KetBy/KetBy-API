@@ -77,7 +77,6 @@ class ProjectController extends Controller
     }
 
     public function getProject(Request $request) {
-        usleep(50000);
         try {
             $token = $request->token;
         
@@ -127,6 +126,7 @@ class ProjectController extends Controller
 
             $meta = $request->meta?? [];
             $content = $request->content?? [];
+            $updateCount = $request->count?? 0; // if 0, do not update, just return the file
 
             foreach ($content as $instruction) {
                 if (!in_array($instruction["gate"], QuantumController::$GATES)) {
@@ -193,6 +193,22 @@ class ProjectController extends Controller
                 ], 404);
             }
 
+            if ($updateCount == 0) {
+                // If the user has read permissions
+                if ($this->getPermissions($user, $project) >= 1) {
+                    $file->meta = json_encode($meta);
+                    $file->content = json_encode($content);
+                    return response()->json([
+                        "success" => true,
+                        "status" => "All changes saved",
+                        "file" => [
+                            "meta" => $file->getMeta(),
+                            "content" => $file->getContent()
+                        ]
+                    ], 200);
+                }
+            }
+
             // If the user has update permissions
             if ($this->getPermissions($user, $project) >= 2) {
                 $file->meta = json_encode($meta);
@@ -202,6 +218,10 @@ class ProjectController extends Controller
                         "success" => true,
                         "status" => "All changes saved",
                         // "results" => $this->runFile($file)
+                        "file" => [
+                            "meta" => $file->getMeta(),
+                            "content" => $file->getContent()
+                        ]
                     ], 200);
                 } else {
                     return response()->json([

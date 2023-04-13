@@ -24,7 +24,7 @@ for _ in range(num_instructions):
     gate = sys.argv[pos]
     qubits = []
     parameters = []
-    if gate in ['I', 'H', 'X', 'Z', 'S', 'S+', 'T', 'T+']:
+    if gate in ['I', 'H', 'X', 'Z', 'S', 'S+', 'T', 'T+', 'Y', 'SX', 'SX+']:
         qubits = [int(sys.argv[pos+1])]
         pos += 2
     elif gate in ['CX', 'SWAP']:
@@ -33,10 +33,18 @@ for _ in range(num_instructions):
     elif gate in ['Tfl']:
         qubits = [int(sys.argv[pos + 1]), int(sys.argv[pos + 2]), int(sys.argv[pos + 3])]
         pos += 4
-    elif gate in ['P']:
+    elif gate in ['P', 'RX', 'RY', 'RZ']:
         qubits = [int(sys.argv[pos + 1])]
         parameters = [eval_simple_fraction(sys.argv[pos + 2])]
         pos += 3
+    elif gate in ['U']:
+        qubits = [int(sys.argv[pos + 1])]
+        parameters = [
+            eval_simple_fraction(sys.argv[pos + 2]), 
+            eval_simple_fraction(sys.argv[pos + 3]), 
+            eval_simple_fraction(sys.argv[pos + 4])
+        ]
+        pos += 5
     instructions.append({"gate": gate, "qubits": qubits, "parameters": parameters})
 
 # Create a quantum circuit with the specified number of qubits
@@ -66,6 +74,20 @@ for instruction in instructions:
         circuit.tdg(instruction["qubits"][0])
     if instruction["gate"] == "P":
         circuit.p(instruction["parameters"][0], instruction["qubits"][0])
+    if instruction["gate"] == "RX":
+        circuit.rx(instruction["parameters"][0], instruction["qubits"][0])
+    if instruction["gate"] == "RY":
+        circuit.ry(instruction["parameters"][0], instruction["qubits"][0])
+    if instruction["gate"] == "RZ":
+        circuit.rz(instruction["parameters"][0], instruction["qubits"][0])
+    if instruction["gate"] == 'Y':
+        circuit.y(instruction["qubits"][0])
+    if instruction["gate"] == 'U':
+        circuit.u(instruction["parameters"][0], instruction["parameters"][1], instruction["parameters"][2], instruction["qubits"][0])
+    if instruction["gate"] == "SX":
+        circuit.sx(instruction["qubits"][0])
+    if instruction["gate"] == "SX+":
+        circuit.sxdg(instruction["qubits"][0])
     
 backend = Aer.get_backend('statevector_simulator')
 
@@ -75,5 +97,5 @@ probs = quantum_info.Statevector(outputstate).probabilities()
 
 i = 0
 for prob in probs:
-    print(convert_to_binary(i, num_qubits), prob)
+    print(convert_to_binary(i, num_qubits), prob * 100)
     i += 1
