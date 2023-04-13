@@ -124,7 +124,10 @@ for i in range(num_qubits):
     basis_state_1[2**i] = 1
     projection_0 = np.dot(basis_state_0, statevector)
     projection_1 = np.dot(basis_state_1, statevector)
-    phase = np.angle(projection_1 / projection_0)
+    if projection_0 == 0:
+        phase = 0
+    else:
+        phase = np.angle(projection_1 / projection_0)
     numerator, denominator = Fraction(phase / np.pi).limit_denominator(100).as_integer_ratio()
     expression = ""
     if numerator == 0:
