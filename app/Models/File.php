@@ -30,6 +30,12 @@ class File extends Model
     ];
 
     public function getMeta() {
+        if ($this->meta == NULL ){
+            return (object) [
+                "qubits" => 1,
+                "bits" => 0
+            ];
+        }
         return json_decode($this->meta);
     }
 

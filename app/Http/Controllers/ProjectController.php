@@ -124,11 +124,19 @@ class ProjectController extends Controller
             
             $user = auth()->user();
 
-            $meta = $request->meta?? [];
+            $meta = $request->meta? [
+                "qubits" => $request->meta["qubits"],
+                "bits" => $request->meta["bits"]
+            ] : [];
             $content = $request->content?? [];
             $updateCount = $request->count?? 0; // if 0, do not update, just return the file
 
-            foreach ($content as $instruction) {
+            foreach ($content as &$instruction) {
+                $instruction = [
+                    "qubits" => $instruction["qubits"],
+                    "params" => $instruction["params"],
+                    "gate" => $instruction["gate"]
+                ];
                 if (!in_array($instruction["gate"], QuantumController::$GATES)) {
                     return response()->json([
                         "success" => false, 
@@ -279,7 +287,7 @@ class ProjectController extends Controller
             $file = new File([
                 'title' => $title,
                 'creator_id' => $user->id,
-                'file_index' => $project->next_file_index
+                'file_index' => $project->next_file_index,
             ]);
             $file = $project->files()->save($file);
 
@@ -292,12 +300,6 @@ class ProjectController extends Controller
             foreach ($files as &$file) {
                 $file->meta = $file->getMeta();
                 $file->content = $file->getContent();
-                if ($file->meta == NULL) {
-                    $file->meta = [
-                        "qubits" => 1,
-                        "bits" => 0
-                    ];
-                }
             }
             $project->files_count = count($files);
 
@@ -345,25 +347,28 @@ class ProjectController extends Controller
 
             // If the user has update permissions
             if ($this->getPermissions($user, $project) >= 2) {
+                // If the project does not have at least 2 files
+                if ($project->files()->count() < 2) {
+                    return response()->json([
+                        "success" => false,
+                        "message" => "You cannot delete the file because it is the only file of this project. Please create a new file and try deleting again. Error code: P_FDEL_0003",
+                    ], 400);
+                }
                 if ($file->delete()) {
                     return response()->json([
                         "success" => true,
-                        "status" => "The file has been deleted.",
-                        "results" => null
+                        "message" => "The file has been deleted.",
                     ], 200);
                 } else {
                     return response()->json([
                         "success" => false,
                         "message" => "Something went wrong. Please try again later. Error code: P_FDEL_0002",
-                        "status" => "Could not save changes P_FDEL_0002",
-                        "results" => null
                     ], 400);
                 }
             } else {
                 return response()->json([
                     "success" => false,
-                    "status" => "Log in to delete file",
-                    "results" => null
+                    "message" => "Log in to delete file",
                 ], 400);
             }
             

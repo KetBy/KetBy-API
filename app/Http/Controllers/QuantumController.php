@@ -130,7 +130,8 @@ class QuantumController extends Controller
             $i = 0;
             foreach ($output as $line) {
                 // Get the probabilities of all possible outcomes
-                if ($i < $qubits ** 2 - 1) {
+                $numOutcomes = 2 ** $qubits;
+                if ($i < $numOutcomes) {
                     $probabilities_arr[] = [
                         "value" => explode(" ", $line)[0], 
                         "probability" => round(floatval(explode(" ", $line)[1]), 6)
@@ -138,8 +139,8 @@ class QuantumController extends Controller
                 }
                 // Get phase disk data
                 // Get the probability of each qubit to be in state 1
-                if ($i >= $qubits ** 2 - 1 && $i < $qubits ** 3) {
-                    $qubits_arr[$i - $qubits ** 2 + 1] = [
+                if ($i >= $numOutcomes && $i < $numOutcomes + $qubits) {
+                    $qubits_arr[$i - $numOutcomes] = [
                         "probability_1" => round(floatval(explode(" ", $line)[1]), 6),
                         "phase" => round(floatval(explode(" ", $line)[2]), 6),
                         "phase_expr" => explode(" ", $line)[3]
