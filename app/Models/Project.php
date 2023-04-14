@@ -24,7 +24,8 @@ class Project extends Model
         'stars_count',
         'views_count',
         'next_file_index',
-        'token'
+        'token',
+        'highlighted'
     ];
     /**
      * The attributes that should be hidden for arrays.

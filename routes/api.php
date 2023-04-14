@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\PageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,6 +17,14 @@ use App\Http\Controllers\UserController;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+
+// Page routes
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'page'
+], function ($router) {
+    Route::get("/index", [PageController::class, 'index']);
+});
 
 // Authentication routes
 Route::group([
