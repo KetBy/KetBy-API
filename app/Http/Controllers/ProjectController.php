@@ -135,7 +135,8 @@ class ProjectController extends Controller
                 $instruction = [
                     "qubits" => $instruction["qubits"],
                     "params" => $instruction["params"],
-                    "gate" => $instruction["gate"]
+                    "gate" => $instruction["gate"],
+                    "uid" => $instruction["uid"]?? rand(1, 1000000)
                 ];
                 if (!in_array($instruction["gate"], QuantumController::$GATES)) {
                     return response()->json([
