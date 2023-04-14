@@ -77,19 +77,28 @@ class ProjectController extends Controller
     }
 
     public function getProject(Request $request) {
+        $user = auth()->user();
+
         try {
             $token = $request->token;
         
             $project = Project::where('token', $token)->first();
-
-            // Access checks 
-            // ... todo
 
             if (!$project) {
                 return response()->json([
                     "success" => false, 
                     "message" => "This project does not exist,"
                 ], 404);
+            }
+
+            $author = $project->owner()->first();
+
+            $permission = $this->getPermissions($user, $project);
+            if ($permission == 0) {
+                return response()->json([
+                    "success" => false,
+                    "message" => "You are not allowed to access this page."
+                ], 403);
             }
 
             $files = $project->files()->orderBy('title')->get();
@@ -107,7 +116,9 @@ class ProjectController extends Controller
             return response()->json([
                 "success" => true,
                 "project" => $project,
-                "files" => $files
+                "files" => $files,
+                "author" => $author,
+                "permissions" => $permission
             ], 200);
 
         } catch (Exception $e) {
@@ -120,9 +131,9 @@ class ProjectController extends Controller
     }
 
     public function updateFile(Request $request) {
+        $user = auth()->user();
+
         try {
-            
-            $user = auth()->user();
 
             $meta = $request->meta? [
                 "qubits" => $request->meta["qubits"],
@@ -191,6 +202,14 @@ class ProjectController extends Controller
                     "success" => false, 
                     "message" => "This project does not exist."
                 ], 404);
+            }
+
+            $permission = $this->getPermissions($user, $project);
+            if ($permission < 2) {
+                return response()->json([
+                    "success" => false,
+                    "message" => "You are not allowed to update this file."
+                ], 403);
             }
 
             $file = File::where("project_id", "=", $project->id)->where("file_index", "=", $fileIndex)->first();
@@ -282,6 +301,14 @@ class ProjectController extends Controller
             ], 404);
         }
 
+        $permission = $this->getPermissions($user, $project);
+        if ($permission < 2) {
+            return response()->json([
+                "success" => false,
+                "message" => "You are not allowed to create a new file for this project."
+            ], 403);
+        }
+
         // If the user has update permissions
         if ($this->getPermissions($user, $project) >= 2) {
             // Create a new file
@@ -346,6 +373,14 @@ class ProjectController extends Controller
                 ], 404);
             }
 
+            $permission = $this->getPermissions($user, $project);
+            if ($permission < 2) {
+                return response()->json([
+                    "success" => false,
+                    "message" => "You are not allowed to delete this file."
+                ], 403);
+            }
+
             // If the user has update permissions
             if ($this->getPermissions($user, $project) >= 2) {
                 // If the project does not have at least 2 files
@@ -408,6 +443,14 @@ class ProjectController extends Controller
                 ], 404);
             }
 
+            $permission = $this->getPermissions($user, $project);
+            if ($permission == 0) {
+                return response()->json([
+                    "success" => false,
+                    "message" => "You are not allowed to access the statistics for this project."
+                ], 403);
+            }
+
             $time = time();
 
             // If the user has read permissions
@@ -431,7 +474,7 @@ class ProjectController extends Controller
                 return response()->json([
                     "success" => true,
                     "results" => $this->_getStats($file),
-                    "download_url" => env("APP_URL") . "/project/" . $project->token . "/" . $file->file_index . "/stats.csv?user_id=" . $user->id . "&t=" . $time . "&token=" . hash("sha256", $user->id . $time . env("TOKEN_SALT")) 
+                    "download_url" => env("APP_URL") . "/project/" . $project->token . "/" . $file->file_index . "/stats.csv?user_id=" . ($user? $user->id : -1) . "&t=" . $time . "&token=" . hash("sha256", ($user? $user->id : -1) . $time . env("TOKEN_SALT")) 
                 ], 200);
             } else {
                 return response()->json([
@@ -461,8 +504,12 @@ class ProjectController extends Controller
      * @return integer $permission
      */
     protected function getPermissions($user, $project) {
-        if (!$user) {
-            return 0;
+        if (!$user || $user->id != $project->owner_id) {
+            if ($project->public == 1) {
+                return 1;
+            } else {
+                return 0;
+            }
         }
         if ($project->owner_id == $user->id) {
             return 2;
