@@ -76,6 +76,63 @@ class ProjectController extends Controller
         }
     }
 
+    public function updateSettings(Request $request) {
+        $user = auth()->user();
+
+        try {
+            $token = $request->token;
+        
+            $project = Project::where('token', $token)->first();
+            if (!$project) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "This project does not exist."
+                ], 404);
+            }
+
+            $permission = $this->getPermissions($user, $project);
+            if ($permission < 2) {
+                return response()->json([
+                    "success" => false,
+                    "message" => "You are not allowed to update this project."
+                ], 403);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'title' => 'required|string|between:2,100',
+                'description' => 'nullable|string|between:2,1000',
+            ]);
+
+            if($validator->fails()){
+                return response()->json([
+                    'success' => false,
+                    'field_errors' => $validator->messages()
+                ], 400);
+            }
+
+            $project->title = $request->title;
+            $project->description = $request->description;
+            if (!$project->save()) {
+                return response()->json([
+                    "success" => false,
+                    "message" => "Something went wrong. Please try again later. Error code: P_PSUPD_0002",
+                ], 500);
+            }
+
+            return response()->json([
+                "success" => true,
+                "message" => "The project settings have been updated.",
+            ], 200);
+            
+        } catch(Exception $e) {
+            return response()->json([
+                "success" => false,
+                "message" => "Something went wrong. Please try again later. Error code: P_PSUPD_0001",
+                "exception" => $e->message
+            ], 400);
+        }
+    }
+
     public function getProject(Request $request) {
         $user = auth()->user();
 
