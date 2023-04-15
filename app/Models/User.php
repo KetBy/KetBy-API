@@ -35,7 +35,6 @@ class User extends Authenticatable implements JWTSubject
         'created_at',
         'updated_at',
         'remember_token',
-        'id'
     ];
     /**
      * The attributes that should be cast to native types.

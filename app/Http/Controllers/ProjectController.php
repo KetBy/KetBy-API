@@ -99,8 +99,9 @@ class ProjectController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'title' => 'required|string|between:2,100',
-                'description' => 'nullable|string|between:2,1000',
+                'title' => 'string|between:2,100',
+                'description' => 'string|between:2,1000',
+                'public' => 'integer|between:0,1'
             ]);
 
             if($validator->fails()){
@@ -110,18 +111,24 @@ class ProjectController extends Controller
                 ], 400);
             }
 
-            $project->title = $request->title;
-            $project->description = $request->description;
+            $project->title = $request->title?? $project->title;
+            $project->description = $request->description?? $project->description;
+            $project->public = $request->public != null? intval($request->public) : $project->public;
+
             if (!$project->save()) {
+                
                 return response()->json([
                     "success" => false,
                     "message" => "Something went wrong. Please try again later. Error code: P_PSUPD_0002",
+                    
                 ], 500);
             }
 
+            $project->author = $project->owner()->first();
             return response()->json([
                 "success" => true,
                 "message" => "The project settings have been updated.",
+                "project" => $project
             ], 200);
             
         } catch(Exception $e) {

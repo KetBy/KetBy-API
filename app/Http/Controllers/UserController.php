@@ -70,6 +70,7 @@ class UserController extends Controller
                 $project->files_count = $files->count();
                 $project->date = $project->getCreatedAt();
                 $project->first_file_index = min(array_column($files->all(), "file_index"));
+                $project->author = $loggedInUser;
                 unset($project->files);
             }
 
