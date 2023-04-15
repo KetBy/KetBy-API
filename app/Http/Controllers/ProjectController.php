@@ -130,6 +130,72 @@ class ProjectController extends Controller
         }
     }
 
+    public function updateFileSettings(Request $request) {
+        $user = auth()->user();
+
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string|between:2,100',
+        ]);
+
+        if($validator->fails()){
+            return response()->json([
+                'success' => false,
+                'field_errors' => $validator->messages()
+            ], 400);
+        }
+
+        try {
+            $token = $request->token;
+            $fileIndex = (int) $request->fileIndex;
+        
+            $project = Project::where('token', $token)->first();
+            if (!$project) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "This project does not exist."
+                ], 404);
+            }
+
+            $permission = $this->getPermissions($user, $project);
+            if ($permission < 2) {
+                return response()->json([
+                    "success" => false,
+                    "message" => "You are not allowed to update this file."
+                ], 403);
+            }
+
+            $file = File::where("project_id", "=", $project->id)->where("file_index", "=", $fileIndex)->first();
+            if (!$file) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "This file does not exist.",
+                ], 404);
+            }
+
+            $title = $request->title;
+            $file->title = $title;
+            if (!$file->save()) {
+                return response()->json([
+                    "success" => false,
+                    "message" => "Something went wrong. Please try again later. Error code: P_FSUPD_0002",
+                ], 500);
+            }
+
+            return response()->json([
+                "success" => true,
+                "message" => "The new file title has been saved.",
+            ], 200);
+
+        }  catch(Exception $e) {
+            return response()->json([
+                "success" => false,
+                "message" => "Something went wrong. Please try again later. Error code: P_FSUPD_0001",
+                "exception" => $e->message
+            ], 400);
+        }
+
+    }
+
     public function updateFile(Request $request) {
         $user = auth()->user();
 

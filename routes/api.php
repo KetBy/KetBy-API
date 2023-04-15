@@ -48,7 +48,8 @@ Route::group([
     Route::post('/', [ProjectController::class, 'create'])->middleware('auth'); // create a new project
     Route::get('/{token}', [ProjectController::class, 'getProject']); // get project data
     Route::post('/{token}', [ProjectController::class, 'createFile']); // create a new file
-    Route::put('/{token}/{fileIndex}', [ProjectController::class, 'updateFile']); // update a file
+    Route::put('/{token}/{fileIndex}', [ProjectController::class, 'updateFile']); // update a file's content
+    Route::post('/{token}/{fileIndex}', [ProjectController::class, 'updateFileSettings']); // update a file (e.g. title)
     Route::delete('/{token}/{fileIndex}', [ProjectController::class, 'deleteFile']); // delete a file
     Route::get('/{token}/{fileIndex}/stats', [ProjectController::class, 'getStats']); // get a circuit statistics 
 });
