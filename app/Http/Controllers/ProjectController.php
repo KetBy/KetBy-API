@@ -34,9 +34,9 @@ class ProjectController extends Controller
             
             // Generate a random project token
             $generator = new StrGen\Generator();
-            $token = $generator->charset(StrGen\CharSet::ALPHA_NUMERIC)->length(16)->generate();
-            while(Project::where(DB::raw('BINARY `token`'), $token)->count() > 0) {
-                $token = $generator->charset(StrGen\CharSet::ALPHA_NUMERIC)->length(16)->generate();
+            $token = strtolower($generator->charset(StrGen\CharSet::ALPHA_NUMERIC)->length(16)->generate());
+            while(Project::where('token', '=', $token)->count() > 0) {
+                $token = strtolower($generator->charset(StrGen\CharSet::ALPHA_NUMERIC)->length(16)->generate());
             }
 
             // Create a new project
@@ -49,7 +49,7 @@ class ProjectController extends Controller
 
             // Create a new file
             $file = new File([
-                'title' => "New circuit",
+                'title' => "Unnamed circuit",
                 'creator_id' => $user->id,
                 'file_index' => $project->next_file_index
             ]);
@@ -137,6 +137,32 @@ class ProjectController extends Controller
                 "message" => "Something went wrong. Please try again later. Error code: P_PSUPD_0001",
                 "exception" => $e->message
             ], 400);
+        }
+    }
+
+    /**
+     * The route of this function shall only be called from NextJS getServerSideProps
+     * It shall return a 200 response code every time.
+     * If the requested project exists, return its smallest file_index, otherwise return 0
+     */
+    public function getProjectFirstFileIndex(Request $request) {
+        $token = $request->token;
+        $project = Project::where('token', $token)->first();
+        if (!$project) {
+            return response()->json([
+                "file_index" => 0
+            ], 200);
+        } else {
+            $files = $project->files;
+            if ($files->count() == 0) {
+                return response()->json([
+                    "file_index" => 0
+                ], 200);
+            }
+            $firstFileIndex = min(array_column($files->all(), "file_index"));
+            return response()->json([
+                "file_index" => $firstFileIndex
+            ], 200);
         }
     }
 
