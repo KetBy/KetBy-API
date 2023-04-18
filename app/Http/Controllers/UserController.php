@@ -59,7 +59,7 @@ class UserController extends Controller
 
             $loggedInUser = auth()->user();
 
-            if ($loggedInUser && $loggedInUser->id = $user->id) {
+            if ($loggedInUser && $loggedInUser->id == $user->id) {
                 $projects = $user->projects()->get();
             } else {
                 $projects = $user->projects()->where('public', 1)->get();

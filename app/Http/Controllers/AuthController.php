@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\Registration;
+use App\Models\PasswordReset;
 use Validator;
 use App\Jobs\SendEmailJob;
 use Illuminate\Support\Facades\Mail;
@@ -244,5 +245,157 @@ class AuthController extends Controller
             'expires_in' => auth()->factory()->getTTL() * 60,
             'user' => auth()->user()
         ]);
+    }
+
+    /**
+     * Request a new password reset link.
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function requestResetPassword(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|string|email|max:100',
+        ]);
+
+        if($validator->fails()){
+            return response()->json([
+                'success' => false,
+                'field_errors' => $validator->messages()
+            ], 400);
+        }
+
+        $email = $request->email;
+
+        // Check if the email address is associated with any User
+        if (User::where("email", "=", $email)->count() == 0) {
+            return response()->json([ 
+                'success' => false,
+                'message' => "This email address is not associated with any account. Please try again."
+            ], 400);
+        }
+       
+        // Check if not too many requests from the same email
+        if (PasswordReset::where("email", "=", $email)->count() >= 5) {
+            return response()->json([ 
+                'success' => false,
+                'message' => "You've tried too many times. Please try again later."
+            ], 400);
+        }
+
+        // Generate unique token
+        $generator = new StrGen\Generator();
+        $token = $generator->charset(StrGen\CharSet::ALPHA_NUMERIC)->length(16)->generate();
+        while(PasswordReset::where('token', '=', $token)->count() > 0) {
+            $token = $generator->charset(StrGen\CharSet::ALPHA_NUMERIC)->length(16)->generate();
+        }
+
+        // Create the PasswordReset instance
+        $passwordReset = PasswordReset::create([
+            'email' => $email,
+            'token' => $token
+        ]);
+
+        // If creation failed
+        if(!$passwordReset) {
+            return response()->json([ 
+                'success' => false,
+                'message' => "Something went wrong. Please try again later. Error code: RPR0001"
+            ], 500);
+        }
+
+         // Send email
+        dispatch(new SendEmailJob(
+            $email, 
+            "Reset your KetBy password", 
+            "mail.reset_password", 
+            ['token' => $token]
+        ));
+
+        return response()->json([
+            'success' => true,
+            'message' => "We've sent you an email. Please check it for further instructions."
+        ], 200);
+
+    }
+
+    public function resetPassword(Request $request) {
+        $token = $request->token;
+        $step = $request->step;
+
+        // Check whether the token is valid (it exists)
+        $passwordReset = PasswordReset::where(DB::raw('BINARY `token`'), $token)->first();
+        if (!$passwordReset) {
+            return response()->json([
+                'success' => false,
+                'message' => "This link does not exist or has expired. Please try again."
+            ], 401);
+        }
+
+        // if step = 1, validate $request->token 
+        // if step = 2, attempt to change the password
+        if ($step == 1) {
+            // We have already checked that the token is valid
+            return response()->json([
+                'success' => true,
+                'message' => null
+            ], 200);
+        } else if ($step == 2) {
+            // Validate the new password
+            $validator = Validator::make($request->all(), [
+                'password' => 'required|string|min:6',
+            ]);
+
+            if($validator->fails()){
+                return response()->json([
+                    'success' => false,
+                    'field_errors' => $validator->messages()
+                ], 400);
+            }
+
+            $password = $request->password;
+            
+            // Change the user's password
+            $user = User::where("email", "=", $passwordReset->email)->first();
+
+            // If the user has changed their password in the meantime
+            if (!$user) {
+                if($validator->fails()){
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Something went wrong. Please try again later. Error code: RP0001"
+                    ], 400);
+                }
+            }
+
+            $user->password = bcrypt($password);
+            if (!$user->save()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Something went wrong. Please try again later. Error code: RP0002"
+                ], 400);
+            }
+
+            // Delete all other PasswordReset instances with the same email address
+            PasswordReset::where('email', $passwordReset->email)->delete();
+
+            // Send an email to the user
+            dispatch(new SendEmailJob(
+                $passwordReset->email, 
+                "Your KetBy password has been changed", 
+                "mail.password_changed", 
+                []
+            ));
+
+            return response()->json([
+                'success' => true,
+                'message' => "You've changed your password successfully. You can now log in with your new password."
+            ], 200);
+
+        } else {
+            return response()->json([
+                'success' => true,
+                'message' => "Something went wrong. Please try again later. Error code: RP0003"
+            ], 401);
+        }
     }
 }

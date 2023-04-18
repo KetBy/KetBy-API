@@ -8,25 +8,21 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * @return void
      */
-    public function up()
+    public function up(): void
     {
         Schema::create('password_resets', function (Blueprint $table) {
             $table->id();
-            $table->string('token');
-            $table->integer('user_id');
-            $table->timestamp('created_at')->nullable();
+            $table->string("email");
+            $table->string("token")->unique();
+            $table->timestamps();
         });
     }
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
-    public function down()
+    public function down(): void
     {
         Schema::dropIfExists('password_resets');
     }

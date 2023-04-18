@@ -34,9 +34,9 @@ Route::group([
     Route::post('/login', [AuthController::class, 'login'])->name('login');
     Route::post('/register', [AuthController::class, 'register'])->middleware('recaptcha');
     Route::post('/confirm', [AuthController::class, 'confirm']);
-    Route::post('/logout', [AuthController::class, 'logout']);
-    Route::post('/refresh', [AuthController::class, 'refresh']);
     Route::get('/status', [AuthController::class, 'status']);    
+    Route::post('/password', [AuthController::class, 'requestResetPassword'])->middleware('recaptcha');
+    Route::post('/password/{token}', [AuthController::class, 'resetPassword']);
 });
 
 // Project routes
