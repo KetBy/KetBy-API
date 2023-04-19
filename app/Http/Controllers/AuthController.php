@@ -49,8 +49,8 @@ class AuthController extends Controller
      */
     public function register(Request $request) {
         $validator = Validator::make($request->all(), [
-            'first_name' => 'required|string|between:2,100',
-            'last_name' => 'required|string|between:2,100',
+            'first_name' => 'required|regex:/^[a-zA-Z-\s]+$/|between:2,32',
+            'last_name' => 'required|regex:/^[a-zA-Z-\s]+$/|between:2,32',
             'email' => 'required|string|email|max:100|unique:users',
             'password' => 'required|string|min:6',
         ]);
@@ -150,9 +150,9 @@ class AuthController extends Controller
 
         // Generate unique username
         $generator = new StrGen\Generator();
-        $username = "user_" . $generator->charset(StrGen\CharSet::NUMERIC)->length(12)->generate();
+        $username = "user_" . $generator->charset(StrGen\CharSet::NUMERIC)->length(8)->generate();
         while(User::where('username', '=', $token)->count() > 0) {
-            $username = "user_" . $generator->charset(StrGen\CharSet::NUMERIC)->length(12)->generate();
+            $username = "user_" . $generator->charset(StrGen\CharSet::NUMERIC)->length(8)->generate();
         }
 
         // If the deletion is successful, create a new account

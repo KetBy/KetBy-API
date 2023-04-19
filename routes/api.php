@@ -62,5 +62,6 @@ Route::group([
     'prefix' => 'user'
 ], function ($router) {
     Route::get('/{username}', [UserController::class, 'index']);
+    Route::post('/{username}', [UserController::class, 'updateSettings']);
     Route::get('/{username}/projects', [UserController::class, 'getProjects']);
 });

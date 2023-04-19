@@ -88,4 +88,75 @@ class UserController extends Controller
         }
         
     }
+
+    public function updateSettings(Request $request) {
+        try {
+            $username = $request->username;
+            
+            $user = User::where('username', $username)->first();
+
+            if (!$user) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "This user does not exist."
+                ], 404);
+            }
+
+            $loggedInUser = auth()->user();
+            if ($loggedInUser->id != $user->id) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "You are not allowed to access this resource."
+                ], 403);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'first_name' => 'required|regex:/^[a-zA-Z-\s]+$/|between:2,32',
+                'last_name' => 'required|regex:/^[a-zA-Z-\s]+$/|between:2,32',
+                'new_username' => 'required|alpha_num|between:4,24'
+            ]);
+
+            if($validator->fails()){
+                return response()->json([
+                    'success' => false,
+                    'field_errors' => $validator->messages()
+                ], 400);
+            }
+
+            // Check whether the username is already being in use
+            if ($user->username != $request->new_username) {
+                if (User::where('username', '=', $request->new_username)->count() > 0) {
+                    return response()->json([
+                        'success' => false,
+                        'field_errors' => [
+                            "new_username" => "This username is already used by someone else."
+                        ]
+                    ], 400);
+                }
+            }
+
+            $user->first_name = ucwords(strtolower($request->first_name));
+            $user->last_name = ucwords(strtolower($request->last_name));
+            $user->username = $request->new_username;
+
+            if ($user->save()) {
+                return response()->json([
+                    "success" => true,
+                    "user" => $user
+                ], 200);
+            } else {
+                return response()->json([
+                    "success" => false,
+                    "message" => "Something went wrong. Please try again later. Error code: P_UPDST_0002",
+                ], 400);
+            }
+            
+        } catch(Exception $e) {
+            return response()->json([
+                "success" => false,
+                "message" => "Something went wrong. Please try again later. Error code: P_UPDST_0001",
+                "exception" => $e->message
+            ], 400);
+        }
+    }
 }
