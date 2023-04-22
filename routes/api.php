@@ -64,4 +64,5 @@ Route::group([
     Route::get('/{username}', [UserController::class, 'index']);
     Route::post('/{username}', [UserController::class, 'updateSettings']);
     Route::get('/{username}/projects', [UserController::class, 'getProjects']);
+    Route::post('/{username}/avatar', [UserController::class, 'updateAvatar']);
 });
