@@ -100,7 +100,7 @@ class ProjectController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'title' => 'string|between:2,100',
-                'description' => 'string|between:2,1000',
+                'description' => 'string|nullable|between:2,1000',
                 'public' => 'integer|between:0,1'
             ]);
 
@@ -298,9 +298,18 @@ class ProjectController extends Controller
             $content = $request->content?? [];
             $updateCount = $request->count?? 0; // if 0, do not update, just return the file
 
+            // Up to 32 qubits and bits
+            if ($meta["qubits"] > 32 || $meta["bits"] > 32) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "Only 32 qubits and 32 classical bits are currently allowed for a single circuit."
+                ], 500);
+            }
+
             foreach ($content as &$instruction) {
                 $instruction = [
                     "qubits" => $instruction["qubits"],
+                    "bits" => $instruction["bits"]?? [],
                     "params" => $instruction["params"],
                     "gate" => $instruction["gate"],
                     "uid" => $instruction["uid"]?? rand(1, 1000000)
@@ -311,12 +320,20 @@ class ProjectController extends Controller
                         "message" => "Undefined gate " . $instruction["gate"]
                     ], 500);
                 } else {
+                    if (QuantumController::$GATES_DATA[$instruction["gate"]]["bits"] != count($instruction["bits"])) {
+                          return response()->json([
+                            "success" => false, 
+                            "message" => "Malformed gate " . $instruction["gate"] 
+                                . ". It requires " . QuantumController::$GATES_DATA[$instruction["gate"]]["bits"] 
+                                . " bits, but " . count($instruction["bits"]) . " were given."
+                        ], 500);  
+                    }
                     if (QuantumController::$GATES_DATA[$instruction["gate"]]["qubits"] != count($instruction["qubits"])) {
                         return response()->json([
                             "success" => false, 
                             "message" => "Malformed gate " . $instruction["gate"] 
                                 . ". It requires " . QuantumController::$GATES_DATA[$instruction["gate"]]["qubits"] 
-                                . " qubits, but " . count($instruction["qubits"]) . " were given"
+                                . " qubits, but " . count($instruction["qubits"]) . " were given."
                         ], 500);
                     }
                     if (QuantumController::$GATES_DATA[$instruction["gate"]]["parameters"] != count($instruction["params"])) {
@@ -324,7 +341,7 @@ class ProjectController extends Controller
                             "success" => false, 
                             "message" => "Malformed gate " . $instruction["gate"] 
                                 . ". It requires " . QuantumController::$GATES_DATA[$instruction["gate"]]["parameters"] 
-                                . " parameters, but " . count($instruction["params"]) . " were given"
+                                . " parameters, but " . count($instruction["params"]) . " were given."
                         ], 500);
                     }
                     foreach ($instruction["qubits"] as $qubit) {
@@ -333,6 +350,15 @@ class ProjectController extends Controller
                                 "success" => false, 
                                 "message" => "Malformed gate with uid = " . $instruction["uid"] 
                                     . ". `$qubit` is not a valid qubit."
+                            ], 500);
+                        }
+                    }
+                    foreach ($instruction["bits"] as $bit) {
+                        if (!is_int($bit) || $bit < 0 || $bit >= $meta["bits"]) {
+                            return response()->json([
+                                "success" => false, 
+                                "message" => "Malformed gate with uid = " . $instruction["uid"] 
+                                    . ". `$bit` is not a valid bit."
                             ], 500);
                         }
                     }
@@ -397,6 +423,7 @@ class ProjectController extends Controller
             if ($this->getPermissions($user, $project) >= 2) {
                 $file->meta = json_encode($meta);
                 $file->content = json_encode($content);
+                $file->stats_cache = null;
                 if ($file->save()) {
                     return response()->json([
                         "success" => true,
@@ -607,6 +634,14 @@ class ProjectController extends Controller
                 ], 403);
             }
 
+            // If the stats have already been computed and cached
+            if ($file->stats_cache != null) {
+                return response()->json([
+                    "success" => true,
+                    "results" => json_decode($file->stats_cache),
+                ], 200);
+            }
+
             $time = time();
 
             // If the user has read permissions
@@ -627,9 +662,15 @@ class ProjectController extends Controller
                         ], 200);
                     }
                 }
+
+                $stats = $this->_getStats($file);
+                // Cache the stats
+                $file->stats_cache = json_encode($stats);
+                $file->save();
+
                 return response()->json([
                     "success" => true,
-                    "results" => $this->_getStats($file),
+                    "results" => $stats,
                     "download_url" => env("APP_URL") . "/project/" . $project->token . "/" . $file->file_index . "/stats.csv?user_id=" . ($user? $user->id : -1) . "&t=" . $time . "&token=" . hash("sha256", ($user? $user->id : -1) . $time . env("TOKEN_SALT")) 
                 ], 200);
             } else {

@@ -9,85 +9,109 @@ class QuantumController extends Controller
     private static $PY_COMMAND = "python3";
     private static $PY_DIR = "/../qiskit"; // Qiskit scripts directory relative to the /public folder
     public static $GATES = [
-        'I', 'H', 'X', 'CX', 'Tfl', 'SWAP', 'Z', 'S', 'S+', 'T', 'T+', 'P', 'RX', 'RY', 'RZ', 'Y', 'U', 'SX', 'SX+'
+        'I', 'H', 'X', 'CX', 'Tfl', 'SWAP', 'Z', 'S', 'S+', 'T', 'T+', 'P', 'RX', 'RY', 'RZ', 'Y', 'U', 'SX', 'SX+', 'M'
     ];
     public static $GATES_DATA = [
         'I' => [
             'qubits' => 1,
-            'parameters' => 0
+            'parameters' => 0,
+            'bits' => 0
         ],
         'H' => [
             'qubits' => 1,
-            'parameters' => 0
+            'parameters' => 0,
+            'bits' => 0
         ],
         'X' => [
             'qubits' => 1,
-            'parameters' => 0
+            'parameters' => 0,
+            'bits' => 0
         ],
         'CX' => [
             'qubits' => 2,
-            'parameters' => 0
+            'parameters' => 0,
+            'bits' => 0
         ],
         'Tfl' => [
             'qubits' => 3,
-            'parameters' => 0
+            'parameters' => 0,
+            'bits' => 0
         ],
         'SWAP' => [
             'qubits' => 2,
-            'parameters' => 0
+            'parameters' => 0,
+            'bits' => 0
         ],
         'Z' => [
             'qubits' => 1,
-            'parameters' => 0
+            'parameters' => 0,
+            'bits' => 0
         ],
         'S' => [
             'qubits' => 1,
-            'parameters' => 0
+            'parameters' => 0,
+            'bits' => 0
         ],
         'S+' => [
             'qubits' => 1,
-            'parameters' => 0
+            'parameters' => 0,
+            'bits' => 0
         ],
         'T' => [
             'qubits' => 1,
-            'parameters' => 0
+            'parameters' => 0,
+            'bits' => 0
         ],
         'T+' => [
             'qubits' => 1,
-            'parameters' => 0
+            'parameters' => 0,
+            'bits' => 0
         ],
         'P' => [
             'qubits' => 1,
-            'parameters' => 1
+            'parameters' => 1,
+            'bits' => 0
         ],
         'RX' => [
             'qubits' => 1,
-            'parameters' => 1
+            'parameters' => 1,
+            'bits' => 0
         ],
         'RY' => [
             'qubits' => 1,
-            'parameters' => 1
+            'parameters' => 1,
+            'bits' => 0
         ],
         'RZ' => [
             'qubits' => 1,
-            'parameters' => 1
+            'parameters' => 1,
+            'bits' => 0
         ],
         'Y' => [
             'qubits' => 1,
-            'parameters' => 0
+            'parameters' => 0,
+            'bits' => 0
         ],
         'U' => [
             'qubits' => 1,
-            'parameters' => 3
+            'parameters' => 3,
+            'bits' => 0
         ],
         'SX' => [
             'qubits' => 1,
-            'parameters' => 0
+            'parameters' => 0,
+            'bits' => 0
         ],
         'SX+' => [
             'qubits' => 1,
-            'parameters' => 0
+            'parameters' => 0,
+            'bits' => 0
         ],
+        'M' => [
+            'qubits' => 1,
+            'parameters' => 0,
+            'bits' => 1
+        ]
     ];
 
     public static function getInfo($qubits, $gates) {
@@ -152,7 +176,7 @@ class QuantumController extends Controller
             $res["qubits"] = $qubits_arr;
         }
 
-        $res["_command"] = $command;
+        // $res["_command"] = $command;
 
         return $res;
     }

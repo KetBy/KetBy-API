@@ -17,6 +17,7 @@ class File extends Model
         'file_index',
         'creator_id',
         'title',
+        'stats_cache'
     ];
     /**
      * The attributes that should be hidden for arrays.
@@ -26,17 +27,22 @@ class File extends Model
     protected $hidden = [
         'creator_id',
         'created_at',
-        'updated_at'
+        'updated_at',
+        'stats_cache'
     ];
 
     public function getMeta() {
         if ($this->meta == NULL ){
             return (object) [
                 "qubits" => 1,
-                "bits" => 0
+                "bits" => 1
             ];
         }
-        return json_decode($this->meta);
+        $meta = json_decode($this->meta);
+        if ($meta->bits < 1) {
+            $meta->bits = 1;
+        }
+        return $meta;
     }
 
     public function getContent() {
