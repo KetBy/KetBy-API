@@ -635,7 +635,7 @@ class ProjectController extends Controller
             }
 
             // If the stats have already been computed and cached
-            if ($file->stats_cache != null && false) {
+            if ($file->stats_cache != null) {
                 return response()->json([
                     "success" => true,
                     "results" => json_decode($file->stats_cache),
