@@ -114,15 +114,12 @@ class QuantumController extends Controller
         ]
     ];
 
-    public static function getInfo($qubits, $gates) {
+    public static function getInfo($gates, $qubits, $bits) {
         $res = [
             "probabilities" => null,
+            "probabilities_message" => null,
             "qubits" => null
         ];
-
-        if ($qubits > 5) {
-            return $res;
-        }
 
         $instructions = count($gates);
         $instructionsStr = "";
@@ -138,45 +135,24 @@ class QuantumController extends Controller
                 . " '" . $gate->params[0] . "'"
                 . " '" . $gate->params[1] . "'"
                 . " '" . $gate->params[2] . "' ";
+            } else if ($gate->gate == "M") {
+                $instructionsStr .= $gate->gate . " " . $gate->qubits[0] . " " . $gate->bits[0] . " ";
             } else {
                 $instructionsStr .= $gate->gate . " " . implode(" ", $gate->qubits) . " ";
             }
         }
 
-        $command = self::$PY_COMMAND . " " . getcwd() . self::$PY_DIR . "/get_info.py $qubits $instructions $instructionsStr";
+        $command = self::$PY_COMMAND . " " . getcwd() . self::$PY_DIR . "/get_info.py $qubits $bits $instructions $instructionsStr";
         $output = null;
         $resultCode = null;
         $result = exec(stripslashes($command), $output, $resultCode);
 
         if ($resultCode == 0) {
-            $probabilities_arr = [];
-            $qubits_arr = [];
-            $i = 0;
-            foreach ($output as $line) {
-                // Get the probabilities of all possible outcomes
-                $numOutcomes = 2 ** $qubits;
-                if ($i < $numOutcomes) {
-                    $probabilities_arr[] = [
-                        "value" => explode(" ", $line)[0], 
-                        "probability" => round(floatval(explode(" ", $line)[1]), 6)
-                    ];
-                }
-                // Get phase disk data
-                // Get the probability of each qubit to be in state 1
-                if ($i >= $numOutcomes && $i < $numOutcomes + $qubits) {
-                    $qubits_arr[$i - $numOutcomes] = [
-                        "probability_1" => round(floatval(explode(" ", $line)[1]), 6),
-                        "phase" => round(floatval(explode(" ", $line)[2]), 6),
-                        "phase_expr" => explode(" ", $line)[3]
-                    ];
-                }
-                $i += 1; 
-            }
-            $res["probabilities"] = $probabilities_arr;
-            $res["qubits"] = $qubits_arr;
+            $json = $output[0];
+            $res = json_decode($json);
         }
 
-        // $res["_command"] = $command;
+        $res->_command = $command;
 
         return $res;
     }

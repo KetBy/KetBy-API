@@ -35,13 +35,10 @@ class File extends Model
         if ($this->meta == NULL ){
             return (object) [
                 "qubits" => 1,
-                "bits" => 1
+                "bits" => 0
             ];
         }
         $meta = json_decode($this->meta);
-        if ($meta->bits < 1) {
-            $meta->bits = 1;
-        }
         return $meta;
     }
 

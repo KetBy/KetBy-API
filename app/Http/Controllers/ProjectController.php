@@ -635,7 +635,7 @@ class ProjectController extends Controller
             }
 
             // If the stats have already been computed and cached
-            if ($file->stats_cache != null) {
+            if ($file->stats_cache != null && false) {
                 return response()->json([
                     "success" => true,
                     "results" => json_decode($file->stats_cache),
@@ -646,21 +646,12 @@ class ProjectController extends Controller
 
             // If the user has read permissions
             if ($this->getPermissions($user, $project) >= 1) {
-                // Check if the circuit only has <= 5 qubits
-                if ($file->getMeta()->qubits > 5) {
-                    if ($file->getMeta()->qubits <= 10) {
-                        return response()->json([
-                            "success" => false,
-                            "message" => "Outcome probabilities are shown for circuits with up to 5 qubits. For circuits with less than 10 qubits, you can still download the probabilities as a CSV file.",
-                            "download_url" => env("APP_URL") . "/project/" . $project->token . "/" . $file->file_index . "/stats.csv?user_id=" . $user->id . "&t=" . $time . "&token=" . hash("sha256", $user->id . $time . env("TOKEN_SALT")) 
-                        ], 200);
-                    } else {
-                        return response()->json([
-                            "success" => false,
-                            "message" => "Outcome probabilities can only be computed for circuits with up to 10 qubits.",
-                            "download_url" => NULL
-                        ], 200);
-                    }
+                // Check if the circuit only has <= 5 bits/qubits
+                if ($file->getMeta()->qubits > 5 || $file->getMeta()->bits > 5) {
+                    return response()->json([
+                        "success" => false,
+                        "message" => "Outcome probabilities and qubit statistics are only computed for circuits with up to 5 qubits and 5 classical bits.",
+                    ], 200);
                 }
 
                 $stats = $this->_getStats($file);
@@ -671,7 +662,7 @@ class ProjectController extends Controller
                 return response()->json([
                     "success" => true,
                     "results" => $stats,
-                    "download_url" => env("APP_URL") . "/project/" . $project->token . "/" . $file->file_index . "/stats.csv?user_id=" . ($user? $user->id : -1) . "&t=" . $time . "&token=" . hash("sha256", ($user? $user->id : -1) . $time . env("TOKEN_SALT")) 
+                    // "download_url" => env("APP_URL") . "/project/" . $project->token . "/" . $file->file_index . "/stats.csv?user_id=" . ($user? $user->id : -1) . "&t=" . $time . "&token=" . hash("sha256", ($user? $user->id : -1) . $time . env("TOKEN_SALT")) 
                 ], 200);
             } else {
                 return response()->json([
@@ -721,6 +712,6 @@ class ProjectController extends Controller
      * @return Object
      */
     protected function _getStats($file) {
-        return QuantumController::getInfo($file->getMeta()->qubits, $file->getContent());
+        return QuantumController::getInfo($file->getContent(), $file->getMeta()->qubits, $file->getMeta()->bits);
     }
 }
