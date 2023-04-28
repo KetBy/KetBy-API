@@ -227,7 +227,7 @@ class AuthController extends Controller
             return response()->json([
                 'is_logged_in' => false,
                 'user' => $user
-            ], 401);
+            ], 200);
         }
     }
 
