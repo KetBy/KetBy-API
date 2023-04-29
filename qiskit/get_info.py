@@ -1,6 +1,6 @@
 import sys
 from qiskit import QuantumCircuit, Aer, quantum_info, execute
-from utils import convert_to_binary, eval_simple_fraction
+from utils import convert_to_binary, eval_simple_fraction, angle_to_expression
 import numpy as np
 from fractions import Fraction
 import math
@@ -106,9 +106,21 @@ backend = Aer.get_backend('statevector_simulator')
 result = backend.run(circuit, shots = shots).result()
 statevector = np.array(result.get_statevector())
 
+
+np.set_printoptions(precision=3, suppress=True)
+# print(statevector)
+
+phases = np.angle(statevector)
+    
 output = {
     'probabilities': None,
-    'qubits': None
+    'qubits': None,
+    'statevector': {
+        'amplitudes': [np.round(np.absolute(i), 3) for i in statevector],
+        'phases': [np.round(i, 3) for i in phases],
+        'phases_str': [angle_to_expression(i) for i in phases],
+        'dump': "{}".format(np.array2string(statevector, max_line_width=None, separator=",").replace(" ", "").replace(",", ", ")),
+    }
 }
 
 probs = quantum_info.Statevector(statevector).probabilities()

@@ -1,5 +1,6 @@
 import math 
 from fractions import Fraction
+import numpy as np
 
 def convert_to_binary(number, length):
 
@@ -47,3 +48,32 @@ def eval_simple_fraction(expression):
     if denominatorStr.startswith("-"):
         denominator *= -1
     return numerator / denominator
+
+# Convert any angle in radians to a point on a circle
+def angle_to_expression(angle):
+    if np.round(angle, 3) == 0:
+        return "0"
+    # Reduce angle to [0,2π)
+    angle = angle % (2 * np.pi)
+    # Convert angle to a fraction of π
+    numerator, denominator = Fraction(angle / np.pi).limit_denominator(100).as_integer_ratio()
+    # Construct expression in terms of π
+    if numerator == 0:
+        expression = "0"
+    elif abs(numerator) == 1:
+        if numerator == -1:
+            if denominator == 1:
+                expression = "-π"
+            else:
+                expression = "-π/{}".format(denominator)
+        else:
+            if denominator == 1:
+                expression = "π"
+            else:
+                expression = "π/{}".format(denominator)
+    else:
+        if denominator == 1:
+            expression = "{}π".format(numerator)
+        else:
+            expression = "{}π/{}".format(numerator, denominator)
+    return expression

@@ -118,7 +118,8 @@ class QuantumController extends Controller
         $res = [
             "probabilities" => null,
             "probabilities_message" => null,
-            "qubits" => null
+            "qubits" => null,
+            "statevector" => null
         ];
 
         $instructions = count($gates);
