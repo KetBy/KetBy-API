@@ -10,6 +10,7 @@ class PageController extends Controller
     public function index(Request $request) {
         $highlightedProjects = Project::where('highlighted', '=', 1)->take(4)->get();
         foreach($highlightedProjects as &$project) {
+            $project->forks_count = $project->getForksCount();
             $files = $project->files;
             $project->files_count = $files->count();
             $project->date = $project->getCreatedAt();

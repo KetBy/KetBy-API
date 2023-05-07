@@ -176,6 +176,7 @@ class UserController extends Controller
             }
 
             foreach($projects as &$project) {
+                $project->forks_count = $project->getForksCount();
                 $files = $project->files;
                 $project->files_count = $files->count();
                 $project->date = $project->getCreatedAt();

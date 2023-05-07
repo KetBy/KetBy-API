@@ -140,6 +140,65 @@ class ProjectController extends Controller
         }
     }
 
+     public function fork(Request $request) {
+        $user = auth()->user();
+
+        try {
+            $token = $request->token;
+        
+            $project = Project::where('token', $token)->first();
+            if (!$project) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "This project does not exist."
+                ], 404);
+            }
+
+            $permission = $this->getPermissions($user, $project);
+            if ($permission == 0) {
+                return response()->json([
+                    "success" => false,
+                    "message" => "You are not allowed to fork this project."
+                ], 403);
+            }
+
+            // Generate a random project token
+            $generator = new StrGen\Generator();
+            $token = strtolower($generator->charset(StrGen\CharSet::ALPHA_NUMERIC)->length(16)->generate());
+            while(Project::where('token', '=', $token)->count() > 0) {
+                $token = strtolower($generator->charset(StrGen\CharSet::ALPHA_NUMERIC)->length(16)->generate());
+            }
+
+            $fork = $project->replicate();
+            $fork->owner_id = $user->id;
+            $fork->token = $token;
+            $fork->title = "Fork of " . str_replace("Fork of ", "", $fork->title);
+            $fork->highlighted = 0;
+            $fork->public = 0;
+            $fork->forked_from = $project->id;
+            $fork->save();
+
+            foreach ($project->files as $_file) {
+                $file = $_file->replicate();
+                $file->project_id = $fork->id;
+                $file->save();
+            }
+
+            return response()->json([
+                "success" => true,
+                "message" => null,
+                "fork" => $fork
+            ], 200);
+
+        } catch(Exception $e) {
+            return response()->json([
+                "success" => false,
+                "message" => "Something went wrong. Please try again later. Error code: P_FORK_0001",
+                "exception" => $e->message
+            ], 400);
+        }
+    }
+
     /**
      * The route of this function shall only be called from NextJS getServerSideProps
      * It shall return a 200 response code every time.
@@ -173,6 +232,7 @@ class ProjectController extends Controller
             $token = $request->token;
         
             $project = Project::where('token', $token)->first();
+            $project->forks_count = $project->getForksCount();
 
             if (!$project) {
                 return response()->json([
@@ -635,7 +695,7 @@ class ProjectController extends Controller
             }
 
             // If the stats have already been computed and cached
-            if ($file->stats_cache != null) {
+            if ($file->stats_cache != null && (!env("APP_ENV")) == "local") {
                 return response()->json([
                     "success" => true,
                     "results" => json_decode($file->stats_cache),

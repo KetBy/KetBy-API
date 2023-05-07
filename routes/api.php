@@ -54,6 +54,7 @@ Route::group([
     Route::put('/{token}/{fileIndex}/settings', [ProjectController::class, 'updateFileSettings']); // update a file (e.g. title)
     Route::delete('/{token}/{fileIndex}', [ProjectController::class, 'deleteFile']); // delete a file
     Route::get('/{token}/{fileIndex}/stats', [ProjectController::class, 'getStats']); // get a circuit statistics 
+    Route::get('/{token}/fork', [ProjectController::class, 'fork']); // fork a project
 });
 
 // User routes

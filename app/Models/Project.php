@@ -59,4 +59,8 @@ class Project extends Model
     {
         return date_format($this->created_at, "j M Y");
     }
+
+    public function getForksCount() {
+        return Project::where('forked_from', '=', $this->id)->get()->count();
+    }
 }

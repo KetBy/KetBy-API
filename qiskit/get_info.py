@@ -120,7 +120,7 @@ output = {
             'base': convert_to_binary(index, num_qubits),
             'amplitude': np.round(np.absolute(statevector[index]), 3),
         } for index in range(len(statevector))],
-        'phases': [np.round(i, 3) for i in phases],
+        'phases': [np.round(i, 6) for i in phases],
         'phases_str': [angle_to_expression(i) for i in phases],
         'dump': "{}".format(np.array2string(statevector, max_line_width=None, separator=",").replace(" ", "").replace(",", ", ")),
     }
