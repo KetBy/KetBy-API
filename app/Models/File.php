@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class File extends Model
 {
@@ -45,5 +46,13 @@ class File extends Model
     public function getContent() {
         $data = json_decode($this->content);
         return $data? $data : [];
+    }
+
+    /**
+     * Get the runes for the file.
+     */
+    public function runs()
+    {
+        return $this->hasMany(Run::class);
     }
 }

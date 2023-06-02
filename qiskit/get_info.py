@@ -7,7 +7,7 @@ import math
 import json
 
 # Call example: 
-# `python3 get_info.py 2 5 CX 0 1 H 0 H 0 I 1 H 1`
+# `python3 get_info.py 2 2 5 CX 0 1 H 0 H 0 I 1 H 1`
 # for the instructions:
 # [
 #   {'gate': 'CX', 'qubits': [0, 1]}, 
@@ -21,6 +21,10 @@ import json
 num_qubits = int(sys.argv[1])
 num_bits = int(sys.argv[2])
 num_instructions = int(sys.argv[3])
+
+simulate = False
+if "--simulate" in sys.argv:
+    simulate = True
 
 # Read the instructions
 instructions = []
@@ -101,100 +105,113 @@ for instruction in instructions:
     if instruction["gate"] == "M":
         circuit.measure(instruction["qubits"][0], instruction["bits"][0])
     
-shots = 1024
-backend = Aer.get_backend('statevector_simulator')
-result = backend.run(circuit, shots = shots).result()
-statevector = np.array(result.get_statevector())
+shots = 1000  # Number of shots for the simulation
 
-
-np.set_printoptions(precision=3, suppress=True)
-# print(statevector)
-
-phases = np.angle(statevector)
+if simulate:
+    if "--shots" in sys.argv:
+        index = sys.argv.index("--shots")
+        _shots = int(sys.argv[index + 1])
+    else:
+        _shots = shots
+    backend = Aer.get_backend('qasm_simulator')
+    result = execute(circuit, backend, shots=_shots).result()
+    counts = result.get_counts()
+    print(json.dumps(counts))
     
-output = {
-    'probabilities': None,
-    'qubits': None,
-    'statevector': {
-        'amplitudes': [{
-            'base': convert_to_binary(index, num_qubits),
-            'amplitude': np.round(np.absolute(statevector[index]), 3),
-        } for index in range(len(statevector))],
-        'phases': [np.round(i, 6) for i in phases],
-        'phases_str': [angle_to_expression(i) for i in phases],
-        'dump': "{}".format(np.array2string(statevector, max_line_width=None, separator=",").replace(" ", "").replace(",", ", ")),
+else:
+    backend = Aer.get_backend('statevector_simulator')
+    result = backend.run(circuit, shots = shots).result()
+    statevector = np.array(result.get_statevector())
+
+
+    np.set_printoptions(precision=3, suppress=True)
+    # print(statevector)
+
+    phases = np.angle(statevector)
+        
+    output = {
+        'probabilities': None,
+        'qubits': None,
+        'statevector': {
+            'amplitudes': [{
+                'base': convert_to_binary(index, num_qubits),
+                'amplitude': np.round(np.absolute(statevector[index]), 3),
+            } for index in range(len(statevector))],
+            'phases': [np.round(i, 6) for i in phases],
+            'phases_str': [angle_to_expression(i) for i in phases],
+            'dump': "{}".format(np.array2string(statevector, max_line_width=None, separator=",").replace(" ", "").replace(",", ", ")),
+        }
     }
-}
 
-probs = quantum_info.Statevector(statevector).probabilities()
-counts = result.get_counts()
+    probs = quantum_info.Statevector(statevector).probabilities()
+    counts = result.get_counts()
 
-# print(circuit.draw("text"))
+    # print(circuit.draw("text"))
 
-# Find probabilities of all possible outcomes when the circuit contains classical bits
-if num_bits > 0:
-    output['probabilities'] = []
-    num_outcomes = 0 if num_bits == 0 else 2 ** num_bits
-    for i in range(num_outcomes):
-        outcome = convert_to_binary(i, num_bits)
-        output['probabilities'].append({
-            'value': outcome, 
-            'probability': counts.get(outcome) / shots * 100 if counts.get(outcome) else 0
-        })
+    # Find probabilities of all possible outcomes when the circuit contains classical bits
+    if num_bits > 0:
+        output['probabilities'] = []
+        num_outcomes = 0 if num_bits == 0 else 2 ** num_bits
+        for i in range(num_outcomes):
+            outcome = convert_to_binary(i, num_bits)
+            output['probabilities'].append({
+                'value': outcome, 
+                'probability': counts.get(outcome) / shots * 100 if counts.get(outcome) else 0
+            })
 
-# Get qubit stats if the circuit has no classical bits
-if num_bits == 0:
-    output["qubits"] = []
-    # Compute the probability of each qubit being in state 1
-    num_shots = sum(counts.values())
-    qubit_probs = [0] * num_qubits
-    for outcome, count in counts.items():
-        for qubit, bit in enumerate(outcome[::-1]):
-            if bit == '1':
-                qubit_probs[qubit] += count
-    for qubit in range(num_qubits):
-        qubit_probs[qubit] /= num_shots
-        qubit_probs[qubit] *= 100
-    # Compute the phase of each qubit
-    phases = []
-    for i in range(num_qubits):
-        basis_state_0 = np.zeros(2**num_qubits)
-        basis_state_0[0] = 1
-        basis_state_1 = np.zeros(2**num_qubits)
-        basis_state_1[2**i] = 1
-        projection_0 = np.dot(basis_state_0, statevector)
-        projection_1 = np.dot(basis_state_1, statevector)
-        if projection_0 == 0:
-            phase = 0
-        else:
-            phase = np.angle(projection_1 / projection_0)
-        numerator, denominator = Fraction(phase / np.pi).limit_denominator(100).as_integer_ratio()
-        expression = ""
-        if numerator == 0:
-            expression = "0"
-        elif abs(numerator) == 1:
-            if numerator == -1:
-                if denominator == 1:
-                    expression = "-pi"
+    # Get qubit stats if the circuit has no classical bits
+    if num_bits == 0:
+        output["qubits"] = []
+        # Compute the probability of each qubit being in state 1
+        num_shots = sum(counts.values())
+        qubit_probs = [0] * num_qubits
+        for outcome, count in counts.items():
+            for qubit, bit in enumerate(outcome[::-1]):
+                if bit == '1':
+                    qubit_probs[qubit] += count
+        for qubit in range(num_qubits):
+            qubit_probs[qubit] /= num_shots
+            qubit_probs[qubit] *= 100
+        # Compute the phase of each qubit
+        phases = []
+        for i in range(num_qubits):
+            basis_state_0 = np.zeros(2**num_qubits)
+            basis_state_0[0] = 1
+            basis_state_1 = np.zeros(2**num_qubits)
+            basis_state_1[2**i] = 1
+            projection_0 = np.dot(basis_state_0, statevector)
+            projection_1 = np.dot(basis_state_1, statevector)
+            if projection_0 == 0:
+                phase = 0
+            else:
+                phase = np.angle(projection_1 / projection_0)
+            numerator, denominator = Fraction(phase / np.pi).limit_denominator(100).as_integer_ratio()
+            expression = ""
+            if numerator == 0:
+                expression = "0"
+            elif abs(numerator) == 1:
+                if numerator == -1:
+                    if denominator == 1:
+                        expression = "-pi"
+                    else:
+                        expression = "-pi/{}".format(denominator)
                 else:
-                    expression = "-pi/{}".format(denominator)
+                    if denominator == 1:
+                        expression = "-pi"
+                    else:
+                        expression = "-pi/{}".format(denominator)
             else:
                 if denominator == 1:
-                    expression = "-pi"
+                    expression = "{}pi".format(numerator)
                 else:
-                    expression = "-pi/{}".format(denominator)
-        else:
-            if denominator == 1:
-                expression = "{}pi".format(numerator)
-            else:
-                expression = "{}pi/{}".format(numerator, denominator)
-        phase_deg = math.degrees(phase)
-        phases.append((phase_deg, expression))
-    for i in range(num_qubits):
-        output['qubits'].append({
-            "probability_1":  qubit_probs[i],
-            "phase": phases[i][0],
-            "phase_expr": phases[i][1]
-        })
+                    expression = "{}pi/{}".format(numerator, denominator)
+            phase_deg = math.degrees(phase)
+            phases.append((phase_deg, expression))
+        for i in range(num_qubits):
+            output['qubits'].append({
+                "probability_1":  qubit_probs[i],
+                "phase": phases[i][0],
+                "phase_expr": phases[i][1]
+            })
 
-print(json.dumps(output))
+    print(json.dumps(output))

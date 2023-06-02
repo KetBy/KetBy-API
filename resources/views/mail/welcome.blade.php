@@ -278,5 +278,4 @@ Welcome to {{ env("WEB_NAME") }}
       </table>
       <![endif]-->
 </div>
-
 @endsection

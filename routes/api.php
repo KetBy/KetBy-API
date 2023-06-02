@@ -55,6 +55,9 @@ Route::group([
     Route::delete('/{token}/{fileIndex}', [ProjectController::class, 'deleteFile']); // delete a file
     Route::get('/{token}/{fileIndex}/stats', [ProjectController::class, 'getStats']); // get a circuit statistics 
     Route::get('/{token}/fork', [ProjectController::class, 'fork']); // fork a project
+    Route::get('/{token}/{fileIndex}/run', [ProjectController::class, 'getSimulations']); // get all simulations of a circuit
+    Route::post('/{token}/{fileIndex}/run', [ProjectController::class, 'createSimulation']); // create a new simulation
+    Route::get('/{token}/{fileIndex}/run/{runIndex}', [ProjectController::class, 'getSimulation']); // get simulation results
 });
 
 // User routes

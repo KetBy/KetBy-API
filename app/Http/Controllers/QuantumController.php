@@ -122,10 +122,38 @@ class QuantumController extends Controller
             "statevector" => null
         ];
 
+        $command = self::buildCommand($gates, $qubits, $bits);
+        $output = null;
+        $resultCode = null;
+        $result = exec(stripslashes($command), $output, $resultCode);
+
+        if ($resultCode == 0) {
+            $json = $output[0];
+            $res = json_decode($json);
+        }
+
+        $res->_command = $command;
+
+        return $res;
+    }
+
+    public static function simulate($gates, $qubits, $bits, $shots = 1000) {
+        $command = self::buildCommand($gates, $qubits, $bits, true, $shots);
+        $output = null;
+        $resultCode = null;
+        $result = exec(stripslashes($command), $output, $resultCode);
+
+        if ($resultCode == 0) {
+            $json = $output[0];
+            return json_decode($json);
+        }
+
+        return null;
+    } 
+
+    public static function buildCommand($gates, $qubits, $bits, $simulate = false, $shots = 1000) {
         $instructions = count($gates);
         $instructionsStr = "";
-
-        // Prepare the instructions string
         foreach ($gates as $gate) {
             if ($gate->gate == "CX" || $gate->gate == "Tfl") {
                 $instructionsStr .= $gate->gate . " " . implode(" ", array_reverse($gate->qubits)) . " ";
@@ -142,25 +170,14 @@ class QuantumController extends Controller
                 $instructionsStr .= $gate->gate . " " . implode(" ", $gate->qubits) . " ";
             }
         }
-
         $command = self::$PY_COMMAND . " " . getcwd() . self::$PY_DIR . "/get_info.py $qubits $bits $instructions $instructionsStr";
-        $output = null;
-        $resultCode = null;
-        $result = exec(stripslashes($command), $output, $resultCode);
-
-        if ($resultCode == 0) {
-            $json = $output[0];
-            $res = json_decode($json);
-        }
-
-        $res->_command = $command;
-
-        return $res;
+        if ($simulate)
+            $command .= " --simulate --shots " . $shots;
+        return $command;
     }
 
     public static function validateSimpleFraction($expression) {
         $re = '/^\-?(\d+|\d*pi)(\/(\-?(\d+|\d*pi)))?$/';
         return preg_match($re, $expression);
     }
-
 }

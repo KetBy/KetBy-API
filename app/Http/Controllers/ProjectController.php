@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Registration;
 use App\Models\Project;
 use App\Models\File;
+use App\Models\Run;
 use Validator;
 use App\Http\Controllers\QuantumController;
 
@@ -741,6 +742,212 @@ class ProjectController extends Controller
         }
     }
 
+    public function getSimulations(Request $request) {
+         try {
+            $user = auth()->user();
+
+            $token = $request->token;
+            $fileIndex = (int) $request->fileIndex;
+        
+            $project = Project::where('token', $token)->first();
+
+            if (!$project) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "This project does not exist."
+                ], 404);
+            }
+
+            $file = File::where("project_id", "=", $project->id)->where("file_index", "=", $fileIndex)->first();
+
+            if (!$file) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "This file does not exist.",
+                ], 404);
+            }
+
+            $permission = $this->getPermissions($user, $project);
+            if ($permission < 2) { // Only owners are allowed to run the circuits (and see their results)
+                return response()->json([
+                    "success" => false,
+                    "message" => "You are not allowed to run this project's circuits."
+                ], 403);
+            }
+
+            $_runs = $file->runs()->orderBy('run_index', 'desc')->get();
+            $runs = [];
+            foreach ($_runs as $run) {
+                $runs[] = [
+                    'created_at' => $run->getCreatedAt(),
+                    'shots' => $run->getShots(),
+                    'run_index' => $run->run_index
+                ];
+            }
+
+            return response()->json([
+                "success" => true,
+                "runs" => $runs,
+            ], 200);
+            
+        } catch(Exception $e) {
+            return response()->json([
+                "success" => false,
+                "message" => "Something went wrong. Please try again later. Error code: P_SIM_0001",
+                "exception" => $e->message
+            ], 400);
+        }
+    }
+
+    public function getSimulation(Request $request) {
+         try {
+            $user = auth()->user();
+
+            $token = $request->token;
+            $fileIndex = (int) $request->fileIndex;
+            $runIndex = (int) $request->runIndex;
+        
+            $project = Project::where('token', $token)->first();
+
+            if (!$project) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "This project does not exist."
+                ], 404);
+            }
+
+            $file = File::where("project_id", "=", $project->id)->where("file_index", "=", $fileIndex)->first();
+
+            if (!$file) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "This file does not exist.",
+                ], 404);
+            }
+
+            $run = $file->runs()->where("run_index", "=", $runIndex)->first();
+
+            if (!$file) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "This run does not exist.",
+                ], 404);
+            }
+
+            $_results = $run->getResults();
+            $run->shots = $run->getShots();
+            $results = [];
+            foreach ($_results as $key => $result) {
+                $results[] = [
+                    'outcome' => $key,
+                    'counts' => $result
+                ];
+            }
+            $run->results = $results;
+            $run->created_at_formatted = $run->getCreatedAt();
+
+            return response()->json([
+                "success" => true,
+                "run" => $run,
+            ], 200);
+            
+        } catch(Exception $e) {
+            return response()->json([
+                "success" => false,
+                "message" => "Something went wrong. Please try again later. Error code: P_SIM_0001",
+                "exception" => $e->message
+            ], 400);
+        }
+    }
+
+    public function createSimulation(Request $request) {
+        try {
+            $user = auth()->user();
+
+            $token = $request->token;
+            $fileIndex = (int) $request->fileIndex;
+            $shots = $request->shots? (int) $request->shots : 1000;
+            if ($shots < 1 || $shots > 10000) {
+                $shots = 1000;
+            }
+        
+            $project = Project::where('token', $token)->first();
+
+            if (!$project) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "This project does not exist."
+                ], 404);
+            }
+
+            $file = File::where("project_id", "=", $project->id)->where("file_index", "=", $fileIndex)->first();
+
+            if (!$file) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "This file does not exist."
+                ], 404);
+            }
+
+            $permission = $this->getPermissions($user, $project);
+            if ($permission < 2) { // Only owners are allowed to run the circuits
+                return response()->json([
+                    "success" => false,
+                    "message" => "You are not allowed to run this project's circuits."
+                ], 403);
+            }
+
+            if ($file->next_run_index > 50) {
+                return response()->json([
+                    "success" => false,
+                    "message" => "You can only run up to 50 simulations of a circuit for now."
+                ], 403);
+            }
+
+            // Check if the circuit has at least one measurement
+            $canBeRun = false;
+            $instructions = $file->getContent();
+            foreach ($instructions as $instruction) {
+                if ($instruction->gate == "M") {
+                    $canBeRun = true;
+                    break;
+                }
+            }
+            if (!$canBeRun) {
+                return response()->json([
+                    "success" => false,
+                    "message" => "Please add at least a measurement to your circuit before running it."
+                ], 500);
+            }
+
+            // Create a new Run instance
+            $run = new Run([
+                'results' => null,
+                'run_index' => $file->next_run_index
+            ]);
+            $file->runs()->save($run);
+
+            $file->next_run_index += 1;
+            $file->save();
+
+            $results = $this->_runSimulation($file, $shots);
+            $run->results = json_encode($results);
+            $run->save();
+
+            return response()->json([
+                "success" => true,
+                "run" => $run,
+            ], 200);
+            
+        } catch(Exception $e) {
+            return response()->json([
+                "success" => false,
+                "message" => "Something went wrong. Please try again later. Error code: P_SIM_0001",
+                "exception" => $e->message
+            ], 400);
+        }
+    }
+
     /**
      * Get an user's permissions for a project.
      * 0 - no access
@@ -773,5 +980,15 @@ class ProjectController extends Controller
      */
     protected function _getStats($file) {
         return QuantumController::getInfo($file->getContent(), $file->getMeta()->qubits, $file->getMeta()->bits);
+    }
+
+    /**
+     * Run a simulation for a project's circuit.
+     * 
+     * @param Class:File $file
+     * @return Object
+     */
+    protected function _runSimulation($file, $shots = 1000) {
+        return QuantumController::simulate($file->getContent(), $file->getMeta()->qubits, $file->getMeta()->bits, $shots);
     }
 }
