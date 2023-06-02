@@ -843,6 +843,9 @@ class ProjectController extends Controller
                     'counts' => $result
                 ];
             }
+            usort($results, function($a, $b) {
+                return strcmp($a['outcome'], $b['outcome']);
+            });
             $run->results = $results;
             $run->created_at_formatted = $run->getCreatedAt();
 
