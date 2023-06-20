@@ -233,7 +233,6 @@ class ProjectController extends Controller
             $token = $request->token;
         
             $project = Project::where('token', $token)->first();
-            $project->forks_count = $project->getForksCount();
 
             if (!$project) {
                 return response()->json([
@@ -241,6 +240,8 @@ class ProjectController extends Controller
                     "message" => "This project does not exist,"
                 ], 404);
             }
+            
+            $project->forks_count = $project->getForksCount();
 
             $author = $project->owner()->first();
 
@@ -270,6 +271,46 @@ class ProjectController extends Controller
                 "files" => $files,
                 "author" => $author,
                 "permissions" => $permission
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                "success" => false,
+                "message" => "Something went wrong. Please try again later. Error code: P_GETP_0001",
+                "exception" => $e->message
+            ], 400);
+        }
+    }
+
+    public function deleteProject(Request $request) {
+        $user = auth()->user();
+
+        try {
+            $token = $request->token;
+        
+            $project = Project::where('token', $token)->first();
+
+            if (!$project) {
+                return response()->json([
+                    "success" => false, 
+                    "message" => "This project does not exist."
+                ], 404);
+            }
+
+            $author = $project->owner()->first();
+
+            $permission = $this->getPermissions($user, $project);
+            if ($permission < 2) {
+                return response()->json([
+                    "success" => false,
+                    "message" => "You are not allowed to delete this project."
+                ], 403);
+            }
+
+            $project->delete();
+
+            return response()->json([
+                "success" => true,
             ], 200);
 
         } catch (Exception $e) {

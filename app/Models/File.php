@@ -55,4 +55,13 @@ class File extends Model
     {
         return $this->hasMany(Run::class);
     }
+
+    public static function boot() {
+        parent::boot();
+        self::deleting(function($file) { 
+            $file->runs()->each(function($run) {
+                $run->delete();
+            });
+        });
+    }
 }

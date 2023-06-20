@@ -40,7 +40,7 @@ class Project extends Model
     ];
 
     /**
-     * Get the files for the project.
+     * Get the files of the project.
      */
     public function files()
     {
@@ -62,5 +62,14 @@ class Project extends Model
 
     public function getForksCount() {
         return Project::where('forked_from', '=', $this->id)->get()->count();
+    }
+
+    public static function boot() {
+        parent::boot();
+        self::deleting(function($project) { 
+             $project->files()->each(function($file) {
+                $file->delete();
+             });
+        });
     }
 }
