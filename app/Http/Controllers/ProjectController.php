@@ -885,7 +885,7 @@ class ProjectController extends Controller
                 ];
             }
             usort($results, function($a, $b) {
-                return strcmp($a['outcome'], $b['outcome']);
+                return strcmp($b['outcome'], $a['outcome']);
             });
             $run->results = $results;
             $run->created_at_formatted = $run->getCreatedAt();
