@@ -10,7 +10,6 @@ use App\Models\Registration;
 use App\Models\Project;
 use App\Models\File;
 use Validator;
-use Aws\S3\S3Client;
 use PHLAK\StrGen;
 
 class UserController extends Controller
