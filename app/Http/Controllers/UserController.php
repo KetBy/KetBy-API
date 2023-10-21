@@ -112,7 +112,7 @@ class UserController extends Controller
 
             // Erase the old avatar from the server
             if (!str_contains($user->avatar_url, "default.svg")) {
-                unlink(public_path("/") . $user->avatar_url);
+                unlink(app_path() . explode("/", $user->avatar_url)[count(explode("/", $user->avatar_url)) - 1]);
             }
 
             // Update the user's avatar URL
