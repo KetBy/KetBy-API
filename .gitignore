@@ -17,3 +17,6 @@ yarn-error.log
 /.idea
 /.vscode
 /qiskit/tests
+/.htaccess
+/public/avatars
+/public/covers

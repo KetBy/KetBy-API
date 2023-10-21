@@ -99,51 +99,29 @@ class UserController extends Controller
                 ], 400);
             }
 
-            $client = new S3Client([
-                'version' => 'latest',
-                'region' => env("CDN_REGION"),
-                'endpoint' => env("CDN_ENDPOINT"),
-                'credentials' => [
-                    'key' => env("CDN_KEY"),
-                    'secret' => env("CDN_SECRET"),
-                ],
-            ]);
+            // Directory where avatars will be stored on the server
+            $avatarPath = public_path('avatars');
 
-            $bucket = env("CDN_BUCKET");
-            $key =  "users/avatars/" . (env("APP_ENV") == "local"? "dev_" : "") . $fileName;
-
-            $result = $client->putObject([
-                'Bucket' => $bucket,
-                'Key' => $key,
-                'Body' => $data,
-                'ContentType' => 'image/svg+xml',
-                'ACL' => 'public-read',
-            ]);
-
-            if ($result['@metadata']['statusCode'] === 200) {
-                // Delete the old avatar
-                $deletedKey = str_replace(env("CDN_URL") . "/", "", $user->avatar_url);
-                if ($user->avatar_url != '/users/default_avatar.svg') {
-                    $client->deleteObject([
-                        'Bucket' => $bucket,
-                        'Key' => $deletedKey
-                    ]);
-                }
-                $user->avatar_url = "/$key";
-                $user->save();
-
-                return response()->json([
-                    "success" => true,
-                    "user" => $user,
-                    "_meta" => $deletedKey
-                ], 200);
-               
-            } else {
-                return response()->json([
-                    "success" => false,
-                    "message" => "Something went wrong. Please try again later. Error code: AVTR0003",
-                ], 400);
+            if (!is_dir($avatarPath)) {
+                // Create the directory if it doesn't exist
+                mkdir($avatarPath, 0755, true);
             }
+
+            // Save the avatar to the server
+            $avatarFilePath = $avatarPath . '/' . $fileName;
+
+            file_put_contents($avatarFilePath, $data);
+
+            // Update the user's avatar URL
+            $user->avatar_url = '/avatars/' . $fileName;
+            $user->save();
+
+
+            return response()->json([
+                "success" => true,
+                "user" => $user
+            ], 200);
+
 
         } catch(Exception $e) {
             return response()->json([
