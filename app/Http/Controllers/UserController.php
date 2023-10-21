@@ -87,7 +87,6 @@ class UserController extends Controller
             $generator = new StrGen\Generator();
             $fileName = $generator->charset(StrGen\CharSet::ALPHA_NUMERIC)->length(32)->generate() . ".svg";
 
-
             $url = "https://api.dicebear.com/6.x/avataaars/svg?seed=$token&backgroundColor=$color1,$color2&backgroundType=gradientLinear";
 
             $data = file_get_contents($url);
@@ -111,10 +110,14 @@ class UserController extends Controller
 
             file_put_contents($avatarFilePath, $data);
 
+            // Erase the old avatar from the server
+            if (!str_contains($user->avatar_url, "default.svg")) {
+                unlink(public_path("/") . $user->avatar_url);
+            }
+
             // Update the user's avatar URL
             $user->avatar_url = '/avatars/' . $fileName;
             $user->save();
-
 
             return response()->json([
                 "success" => true,

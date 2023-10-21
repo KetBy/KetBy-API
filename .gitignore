@@ -18,5 +18,7 @@ yarn-error.log
 /.vscode
 /qiskit/tests
 /.htaccess
-/public/avatars
-/public/covers
+/public/avatars/*
+/public/covers/*
+!/public/avatars/default.svg
+!/public/covers/default.svg
